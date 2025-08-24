@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:padding="16dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/tvStatus"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Status: Iniciando..."
+            android:textSize="14sp"
+            android:layout_marginBottom="16dp"
+            android:background="#f0f0f0"
+            android:padding="8dp" />
+
+        <TextView
+            android:id="@+id/tvAccelerometer"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Acelerômetro: Aguardando..."
+            android:textSize="16sp"
+            android:layout_marginBottom="16dp"
+            android:background="#e8f5e8"
+            android:padding="12dp" />
+
+        <TextView
+            android:id="@+id/tvGyroscope"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Giroscópio: Aguardando..."
+            android:textSize="16sp"
+            android:layout_marginBottom="24dp"
+            android:background="#e8f0ff"
+            android:padding="12dp" />
+
+        <!-- Botões de controle -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:layout_marginTop="16dp">
+
+            <Button
+                android:id="@+id/btnStartRecording"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="🔴 Iniciar Gravação"
+                android:textSize="16sp"
+                android:layout_marginBottom="8dp"
+                android:backgroundTint="#4CAF50" />
+
+            <Button
+                android:id="@+id/btnStopRecording"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="⏹️ Parar Gravação"
+                android:textSize="16sp"
+                android:layout_marginBottom="8dp"
+                android:backgroundTint="#f44336" />
+
+            <Button
+                android:id="@+id/btnViewData"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="📁 Ver Dados Salvos"
+                android:textSize="16sp"
+                android:backgroundTint="#2196F3" />
+
+        </LinearLayout>
+
+        <!-- Informações sobre os dados -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="ℹ️ Os dados serão salvos em formato CSV na pasta do app. Você pode acessá-los via cabo USB ou compartilhamento."
+            android:textSize="12sp"
+            android:layout_marginTop="24dp"
+            android:background="#fff3cd"
+            android:padding="12dp" />
+
+    </LinearLayout>
+
+</ScrollView>
