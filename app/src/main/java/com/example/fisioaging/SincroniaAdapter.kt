@@ -10,6 +10,7 @@ import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Locale
 
+// Modelo de dados para o item da lista
 data class TesteSalvo(val arquivo: File, var isSelected: Boolean = false)
 
 class SincroniaAdapter(private val testes: MutableList<TesteSalvo>) :
@@ -30,7 +31,6 @@ class SincroniaAdapter(private val testes: MutableList<TesteSalvo>) :
         val teste = testes[position]
 
         holder.nomeArquivo.text = formatarNomeArquivo(teste.arquivo.name)
-
         holder.checkBox.isChecked = teste.isSelected
 
         holder.checkBox.setOnCheckedChangeListener { _, isChecked ->
@@ -45,13 +45,34 @@ class SincroniaAdapter(private val testes: MutableList<TesteSalvo>) :
     }
 
     private fun formatarNomeArquivo(nomeArquivo: String): String {
-
+        // Padrão esperado: TIPO_DATA_HORA.csv (Ex: MARCHA_20251127_190000.csv)
         try {
-            val parser = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault())
-            val formatter = SimpleDateFormat("dd/MM/yyyy 'às' HH:mm:ss", Locale.getDefault())
-            val dataString = nomeArquivo.removePrefix("teste_").removeSuffix(".csv")
-            val data = parser.parse(dataString)
-            return "Teste de ${formatter.format(data)}"
+            val nomeLimpo = nomeArquivo.removeSuffix(".csv")
+            val partes = nomeLimpo.split("_")
+
+            if (partes.isEmpty()) return nomeArquivo
+
+            val prefixo = partes[0]
+
+            // Reconstrói a string de data se houver partes suficientes
+            val dataString = if (partes.size >= 3) "${partes[1]}_${partes[2]}" else ""
+
+            val nomeBonitoTeste = when (prefixo) {
+                "MARCHA" -> "Marcha Estacionária"
+                "PONTA" -> "Ponta dos Pés"
+                "teste" -> "Teste Antigo"
+                else -> "Teste Desconhecido"
+            }
+
+            if (dataString.isNotEmpty()) {
+                val parser = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault())
+                val formatter = SimpleDateFormat("dd/MM/yyyy 'às' HH:mm", Locale.getDefault())
+                val data = parser.parse(dataString)
+                return "$nomeBonitoTeste\n${formatter.format(data)}"
+            } else {
+                return nomeBonitoTeste
+            }
+
         } catch (e: Exception) {
             return nomeArquivo
         }

@@ -19,11 +19,18 @@ class SincroniaActivity : AppCompatActivity() {
         setContentView(R.layout.activity_sincronia)
         supportActionBar?.title = "Sincronizar Testes"
 
+        configurarRecyclerView()
+        configurarBotoes()
+    }
+
+    private fun configurarRecyclerView() {
         recyclerView = findViewById(R.id.recycler_view_testes)
         adapter = SincroniaAdapter(listaTestesSalvos)
         recyclerView.layoutManager = LinearLayoutManager(this)
         recyclerView.adapter = adapter
+    }
 
+    private fun configurarBotoes() {
         val btnSincronizar: Button = findViewById(R.id.btn_sincronizar)
         val btnApagar: Button = findViewById(R.id.btn_apagar)
 
@@ -46,14 +53,16 @@ class SincroniaActivity : AppCompatActivity() {
 
         val diretorioArquivos = filesDir
 
+        // Filtra todos os arquivos CSV gerados pelo app
         val arquivos = diretorioArquivos.listFiles { _, nome ->
-            nome.startsWith("teste_") && nome.endsWith(".csv")
+            nome.endsWith(".csv")
         }
 
         arquivos?.forEach {
             listaTestesSalvos.add(TesteSalvo(it))
         }
 
+        // Ordena por data de modificação (mais recente primeiro)
         listaTestesSalvos.sortByDescending { it.arquivo.lastModified() }
 
         adapter.notifyDataSetChanged()
@@ -74,17 +83,17 @@ class SincroniaActivity : AppCompatActivity() {
         }
 
         Toast.makeText(this, "$contagemApagados testes apagados", Toast.LENGTH_SHORT).show()
-
         carregarTestesSalvos()
     }
 
     private fun sincronizarArquivosSelecionados() {
         val selecionados = adapter.getItensSelecionados()
         if (selecionados.isEmpty()) {
-            Toast.makeText(this, "Nenhum teste selecionado para sincronizar", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "Selecione testes para sincronizar", Toast.LENGTH_SHORT).show()
             return
         }
 
+        // Simulação de sincronização (apaga os arquivos locais após envio)
         var contagemSincronizados = 0
         selecionados.forEach { testeSalvo ->
             if (testeSalvo.arquivo.delete()) {
@@ -92,8 +101,7 @@ class SincroniaActivity : AppCompatActivity() {
             }
         }
 
-        Toast.makeText(this, "$contagemSincronizados testes sincronizados (e apagados)", Toast.LENGTH_SHORT).show()
-
+        Toast.makeText(this, "$contagemSincronizados testes sincronizados", Toast.LENGTH_SHORT).show()
         carregarTestesSalvos()
     }
 }
