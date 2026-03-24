@@ -14,7 +14,7 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.FisioAging">
         <activity
-            android:name=".MainActivity"
+            android:name=".ui.main.MainActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -23,14 +23,16 @@
             </intent-filter>
         </activity>
         <activity
-            android:name=".TesteDetalhesActivity"
+            android:name=".ui.marcha.MarchaDetalhesActivity"
             android:label="Detalhes do Teste" />
         <activity
-            android:name=".TesteEmAndamentoActivity"
+            android:name=".ui.marcha.MarchaExecucaoActivity"
             android:label="Teste em Andamento" />
         <activity
-            android:name=".SincroniaActivity"
+            android:name=".ui.sincronia.SincroniaActivity"
             android:label="Sincronizar Testes" />
+        <activity android:name=".ui.utt.UttDetalhesActivity" android:label="Instruções UTT" />
+        <activity android:name=".ui.utt.UttExecucaoActivity" android:label="Teste UTT" />
     </application>
 
 </manifest>

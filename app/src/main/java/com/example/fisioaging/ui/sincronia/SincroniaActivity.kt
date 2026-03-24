@@ -1,4 +1,4 @@
-package com.example.fisioaging
+package com.example.fisioaging.ui.sincronia
 
 import android.os.Bundle
 import android.widget.Button
@@ -6,7 +6,9 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import java.io.File
+import com.example.fisioaging.R
+import com.example.fisioaging.model.TesteSalvo
+import kotlin.collections.forEach
 
 class SincroniaActivity : AppCompatActivity() {
 
@@ -25,6 +27,7 @@ class SincroniaActivity : AppCompatActivity() {
 
     private fun configurarRecyclerView() {
         recyclerView = findViewById(R.id.recycler_view_testes)
+        // O Adapter vai gerenciar a exibição baseada no que colocarmos no TesteSalvo
         adapter = SincroniaAdapter(listaTestesSalvos)
         recyclerView.layoutManager = LinearLayoutManager(this)
         recyclerView.adapter = adapter
@@ -50,22 +53,47 @@ class SincroniaActivity : AppCompatActivity() {
 
     private fun carregarTestesSalvos() {
         listaTestesSalvos.clear()
-
         val diretorioArquivos = filesDir
 
-        // Filtra todos os arquivos CSV gerados pelo app
+        // Filtra arquivos JSON que começam com MARCHA_ ou UTT_
         val arquivos = diretorioArquivos.listFiles { _, nome ->
-            nome.endsWith(".csv")
+            nome.endsWith(".json") && (nome.startsWith("MARCHA_") || nome.startsWith("UTT_"))
         }
 
-        arquivos?.forEach {
-            listaTestesSalvos.add(TesteSalvo(it))
+
+        arquivos?.forEach { arquivo ->
+            val infoFormatada = formatarNomeDoTeste(arquivo.name)
+
+            listaTestesSalvos.add(TesteSalvo(arquivo, infoFormatada))
         }
 
-        // Ordena por data de modificação (mais recente primeiro)
+        // Ordena por data (mais recente primeiro)
         listaTestesSalvos.sortByDescending { it.arquivo.lastModified() }
 
         adapter.notifyDataSetChanged()
+    }
+
+    // Função auxiliar para transformar "MARCHA_20260320_210055.json" em algo legível
+    private fun formatarNomeDoTeste(nomeArquivo: String): String {
+        return try {
+            val partes = nomeArquivo.split("_")
+            val tipo = if (partes[0] == "MARCHA") "Marcha Estacionária" else "Ponta dos Pés (UTT)"
+
+            // Extrai a data (Ex: 20260320)
+            val dataBruta = partes[1]
+            val ano = dataBruta.substring(0, 4)
+            val mes = dataBruta.substring(4, 6)
+            val dia = dataBruta.substring(6, 8)
+
+            // Extrai a hora (Ex: 210055)
+            val horaBruta = partes[2]
+            val hora = horaBruta.substring(0, 2)
+            val min = horaBruta.substring(2, 4)
+
+            "$tipo\nRealizado em: $dia/$mes/$ano às $hora:$min"
+        } catch (e: Exception) {
+            "Teste: $nomeArquivo" // Fallback caso o nome esteja fora do padrão
+        }
     }
 
     private fun apagarArquivosSelecionados() {
@@ -93,15 +121,17 @@ class SincroniaActivity : AppCompatActivity() {
             return
         }
 
-        // Simulação de sincronização (apaga os arquivos locais após envio)
-        var contagemSincronizados = 0
+        // --- Chamada para a API (QUANDO ESTIVER PRONTA)
+
+        Toast.makeText(this, "Sincronizando ${selecionados.size} arquivos com o servidor...", Toast.LENGTH_LONG).show()
+
+        // Simulação: Após o envio bem-sucedido, removemos do celular para liberar espaço
         selecionados.forEach { testeSalvo ->
-            if (testeSalvo.arquivo.delete()) {
-                contagemSincronizados++
-            }
+
+            testeSalvo.arquivo.delete()
         }
 
-        Toast.makeText(this, "$contagemSincronizados testes sincronizados", Toast.LENGTH_SHORT).show()
+        Toast.makeText(this, "Sincronização concluída!", Toast.LENGTH_SHORT).show()
         carregarTestesSalvos()
     }
 }

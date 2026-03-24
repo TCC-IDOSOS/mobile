@@ -1,4 +1,4 @@
-package com.example.fisioaging
+package com.example.fisioaging.ui.marcha
 
 import android.content.Context
 import android.hardware.Sensor
@@ -7,13 +7,15 @@ import android.hardware.SensorEventListener
 import android.hardware.SensorManager
 import android.os.Bundle
 import android.os.CountDownTimer
-import android.util.Log
 import android.view.View
 import android.widget.ImageButton
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import com.example.fisioaging.R
+import org.json.JSONArray
+import org.json.JSONObject
 import java.io.FileOutputStream
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -22,7 +24,7 @@ import kotlin.math.sqrt
 
 private enum class EstadoTeste { PRONTO, RODANDO, CONCLUIDO }
 
-class TesteEmAndamentoActivity : AppCompatActivity(), SensorEventListener {
+class MarchaExecucaoActivity : AppCompatActivity(), SensorEventListener {
 
     // Componentes da UI
     private lateinit var textTimer: TextView
@@ -42,14 +44,14 @@ class TesteEmAndamentoActivity : AppCompatActivity(), SensorEventListener {
 
     // Controle do Timer
     private var timer: CountDownTimer? = null
-    private val tempoTotalEmMillis: Long = 30 * 1000 // Configurado para 30s (PoC)
+    private val tempoTotalEmMillis: Long = 2 * 60 * 1000 // 2 minutos
 
     // Sensor e Dados
     private lateinit var sensorManager: SensorManager
     private var acelerometro: Sensor? = null
 
     // Lista para armazenamento temporário dos dados brutos
-    private val dadosColetados = mutableListOf<String>()
+    private val dadosColetados = mutableListOf<JSONObject>()
     private var tempoInicioTeste: Long = 0
 
     // Variáveis do Algoritmo de Contagem
@@ -62,7 +64,7 @@ class TesteEmAndamentoActivity : AppCompatActivity(), SensorEventListener {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_teste_em_andamento)
+        setContentView(R.layout.activity_marcha_execucao)
 
         supportActionBar?.title = "2 Minutos Marcha estacionária"
 
@@ -91,7 +93,7 @@ class TesteEmAndamentoActivity : AppCompatActivity(), SensorEventListener {
     }
 
     private fun configurarSensores() {
-        sensorManager = getSystemService(Context.SENSOR_SERVICE) as SensorManager
+        sensorManager = getSystemService(SENSOR_SERVICE) as SensorManager
 
         // Prioriza o Acelerômetro Linear para remover gravidade automaticamente
         val sensorLinear = sensorManager.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION)
@@ -137,7 +139,7 @@ class TesteEmAndamentoActivity : AppCompatActivity(), SensorEventListener {
         }
 
         btnSave.setOnClickListener {
-            salvarDadosCSV()
+            salvarDadosJSON()
             finish()
         }
     }
@@ -151,7 +153,7 @@ class TesteEmAndamentoActivity : AppCompatActivity(), SensorEventListener {
             EstadoTeste.PRONTO -> {
                 textTimer.visibility = View.VISIBLE
                 textResultado.visibility = View.GONE
-                textTimer.text = "0:30"
+                textTimer.text = "2:00"
                 lblStatus.text = "Tempo Restante"
                 dadosColetados.clear()
                 layoutBotaoPlay.visibility = View.VISIBLE
@@ -182,17 +184,20 @@ class TesteEmAndamentoActivity : AppCompatActivity(), SensorEventListener {
                 val y = eventoNaoNulo.values[1]
                 val z = eventoNaoNulo.values[2]
 
-                // Armazena dados brutos formatados para padrão BR (vírgula)
-                val linhaCsv = "$tempoRelativo;${x.toString().replace('.', ',')};${y.toString().replace('.', ',')};${z.toString().replace('.', ',')}"
-                dadosColetados.add(linhaCsv)
+                //  Cria objeto JSON para o registro atual
+                val registro = JSONObject()
+                registro.put("time", tempoRelativo)
+                registro.put("x", x)
+                registro.put("y", y)
+                registro.put("z", z)
 
-                // Algoritmo de contagem em tempo real
+                dadosColetados.add(registro)
+
+                // Algoritmo de contagem
                 val magnitude = sqrt((x * x + y * y + z * z).toDouble())
-
                 if (magnitude > LIMITE_PICO && (tempoAtual - ultimoPicoTempo > COOLDOWN_PICO_MS)) {
                     contagemRepeticoes++
                     ultimoPicoTempo = tempoAtual
-                    Log.d("FISIO_AGING", "Pico detectado: $contagemRepeticoes")
                 }
             }
         }
@@ -213,24 +218,32 @@ class TesteEmAndamentoActivity : AppCompatActivity(), SensorEventListener {
         sensorManager.unregisterListener(this)
     }
 
-    private fun salvarDadosCSV() {
+    private fun salvarDadosJSON() {
         if (dadosColetados.isEmpty()) return
 
         val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
-        // Prefixo MARCHA para identificar o tipo do teste na lista
-        val nomeArquivo = "MARCHA_$timestamp.csv"
+        val nomeArquivo = "MARCHA_$timestamp.json"
 
         try {
-            val fileOutputStream: FileOutputStream = openFileOutput(nomeArquivo, Context.MODE_PRIVATE)
-            fileOutputStream.write("time;x;y;z\n".toByteArray())
-            dadosColetados.forEach { linha ->
-                fileOutputStream.write("$linha\n".toByteArray())
-            }
+            val root = org.json.JSONObject()
+
+            root.put("tipo_teste", "MARCHA") // Identificador para o servidor
+            root.put("data_hora", timestamp)
+            root.put("total_repeticoes_app", contagemRepeticoes)
+
+            // Transforma a lista de registros em um JSONArray
+            val jsonArrayRegistros = org.json.JSONArray(dadosColetados)
+            root.put("registros", jsonArrayRegistros)
+
+            // Escrita do arquivo na memória interna
+            val fileOutputStream: java.io.FileOutputStream = openFileOutput(nomeArquivo, Context.MODE_PRIVATE)
+            fileOutputStream.write(root.toString(4).toByteArray()) // O '4' organiza o texto (identação)
             fileOutputStream.close()
-            Toast.makeText(this, "Teste salvo com sucesso", Toast.LENGTH_LONG).show()
+
+            Toast.makeText(this, "Teste de Marcha salvo!", Toast.LENGTH_SHORT).show()
         } catch (e: Exception) {
             e.printStackTrace()
-            Toast.makeText(this, "Erro ao salvar arquivo", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "Erro ao salvar JSON", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -245,7 +258,7 @@ class TesteEmAndamentoActivity : AppCompatActivity(), SensorEventListener {
             override fun onFinish() {
                 pararColetaSensor()
                 atualizarVisibilidade(EstadoTeste.CONCLUIDO)
-                Toast.makeText(this@TesteEmAndamentoActivity, "Teste Concluído!", Toast.LENGTH_LONG).show()
+                Toast.makeText(this@MarchaExecucaoActivity, "Teste Concluído!", Toast.LENGTH_LONG).show()
             }
         }.start()
     }

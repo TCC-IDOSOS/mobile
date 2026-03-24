@@ -44,7 +44,7 @@
             android:id="@+id/text_timer_contador"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="0:30"
+            android:text="2:00"
             android:textColor="@android:color/black"
             android:textSize="48sp"
             android:textStyle="bold"/>
