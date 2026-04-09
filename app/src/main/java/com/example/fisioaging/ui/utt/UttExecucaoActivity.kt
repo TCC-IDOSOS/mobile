@@ -18,13 +18,11 @@ import org.json.JSONObject
 import java.io.FileOutputStream
 import java.text.SimpleDateFormat
 import java.util.*
-import kotlin.math.abs
 
 private enum class EstadoUTT { PRONTO, RODANDO, CONCLUIDO }
 
 class UttExecucaoActivity : AppCompatActivity(), SensorEventListener {
 
-    // Componentes da UI
     private lateinit var textTimer: TextView
     private lateinit var textResultado: TextView
     private lateinit var lblStatus: TextView
@@ -40,36 +38,36 @@ class UttExecucaoActivity : AppCompatActivity(), SensorEventListener {
     private lateinit var btnDiscard: ImageButton
     private lateinit var btnSave: ImageButton
 
-    // Controle do Timer
     private var timer: CountDownTimer? = null
-    private val tempoTotalEmMillis: Long = 30 * 1000 // 30 segundos exatos para UTT
+    private val tempoTotalEmMillis: Long = 30 * 1000
 
-    // Sensor e Coleta
     private lateinit var sensorManager: SensorManager
     private var acelerometro: Sensor? = null
+
     private val dadosColetados = mutableListOf<JSONObject>()
     private var tempoInicioTeste: Long = 0
 
-    // Algoritmo Simples de Feedback (Ponta dos pés - Foco no Eixo X)
     private var contagemRepeticoes = 0
-    private var ultimoPicoTempo: Long = 0
-    private val COOLDOWN_PICO_MS = 600 // Tempo mínimo entre repetições
-    private val LIMITE_PICO_X = 3.5 // Sensibilidade para o eixo X
+    private var ultimoTempo = 0L
+
+    // Máquina de estados
+    private var fase = 0
+    // 0 = esperando subir | 1 = subindo | 2 = descendo
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_utt_execucao) // Reutiliza seu XML padrão
+        setContentView(R.layout.activity_utt_execucao)
 
         supportActionBar?.title = "Teste UTT - Na Ponta dos Pés"
 
-        inicializarComponentesUI()
-        configurarSensores()
-        configurarListenersBotoes()
+        inicializarUI()
+        configurarSensor()
+        configurarBotoes()
 
         atualizarUI(EstadoUTT.PRONTO)
     }
 
-    private fun inicializarComponentesUI() {
+    private fun inicializarUI() {
         textTimer = findViewById(R.id.text_timer_contador)
         textResultado = findViewById(R.id.text_resultado_final)
         lblStatus = findViewById(R.id.lbl_status_teste)
@@ -86,46 +84,34 @@ class UttExecucaoActivity : AppCompatActivity(), SensorEventListener {
         btnSave = findViewById(R.id.btn_save)
     }
 
-    private fun configurarSensores() {
+    private fun configurarSensor() {
         sensorManager = getSystemService(SENSOR_SERVICE) as SensorManager
-        // O UTT utiliza o acelerômetro (preferencialmente linear se disponível, ou comum)
-        acelerometro = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
+        acelerometro = sensorManager.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION)
     }
 
-    private fun configurarListenersBotoes() {
-        // Iniciar Teste
+    private fun configurarBotoes() {
+
         btnPlay.setOnClickListener {
             iniciarColeta()
             iniciarTimer(tempoTotalEmMillis)
             atualizarUI(EstadoUTT.RODANDO)
         }
 
-        // Parar durante execução
-        btnStop.setOnClickListener {
-            pararTeste()
-        }
+        btnStop.setOnClickListener { pararTeste() }
 
-        // Reiniciar enquanto roda
         btnRestartRodando.setOnClickListener {
             pararTeste()
             atualizarUI(EstadoUTT.PRONTO)
-            Toast.makeText(this, "Teste resetado", Toast.LENGTH_SHORT).show()
         }
 
-        // Reiniciar após concluir
         btnRestartConcluido.setOnClickListener {
             atualizarUI(EstadoUTT.PRONTO)
         }
 
-        // Descartar teste
-        btnDiscard.setOnClickListener {
-            Toast.makeText(this, "Teste descartado", Toast.LENGTH_SHORT).show()
-            finish()
-        }
+        btnDiscard.setOnClickListener { finish() }
 
-        // Salvar JSON e Sair
         btnSave.setOnClickListener {
-            salvarDadosJSON()
+            salvarJSON()
             finish()
         }
     }
@@ -133,6 +119,7 @@ class UttExecucaoActivity : AppCompatActivity(), SensorEventListener {
     private fun iniciarColeta() {
         dadosColetados.clear()
         contagemRepeticoes = 0
+        fase = 0
         tempoInicioTeste = System.currentTimeMillis()
 
         acelerometro?.let {
@@ -148,7 +135,8 @@ class UttExecucaoActivity : AppCompatActivity(), SensorEventListener {
 
     override fun onSensorChanged(event: SensorEvent?) {
         event?.let { e ->
-            if (e.sensor.type == Sensor.TYPE_ACCELEROMETER) {
+            if (e.sensor.type == Sensor.TYPE_LINEAR_ACCELERATION) {
+
                 val tempoAtual = System.currentTimeMillis()
                 val tempoRelativo = tempoAtual - tempoInicioTeste
 
@@ -156,47 +144,52 @@ class UttExecucaoActivity : AppCompatActivity(), SensorEventListener {
                 val y = e.values[1]
                 val z = e.values[2]
 
-
-                // Criar registro JSON conforme script UTT_01
+                // 🔥 SALVA DADOS
                 val registro = JSONObject()
                 registro.put("time", tempoRelativo)
-                registro.put("acc_x", x) // O script UTT foca no X
-                registro.put("acc_y", y)
-                registro.put("acc_z", z)
+                registro.put("x", x)
+                registro.put("y", y)
+                registro.put("z", z)
                 dadosColetados.add(registro)
 
-                // Algoritmo de contagem preliminar para feedback no app
-                // Baseado na variação brusca do Eixo X (movimento de subida/descida lateral)
-                if (abs(x) > LIMITE_PICO_X && (tempoAtual - ultimoPicoTempo > COOLDOWN_PICO_MS)) {
-                    contagemRepeticoes++
-                    ultimoPicoTempo = tempoAtual
+                // 🧠 CONTAGEM (máquina de estados)
+                when (fase) {
+
+                    0 -> if (y > 1.2) fase = 1
+
+                    1 -> if (y < 0) fase = 2
+
+                    2 -> {
+                        if (y < -1.2 && (tempoAtual - ultimoTempo > 600)) {
+                            contagemRepeticoes++
+                            ultimoTempo = tempoAtual
+                            fase = 0
+                        }
+                    }
                 }
             }
         }
     }
 
-    private fun salvarDadosJSON() {
+    private fun salvarJSON() {
         if (dadosColetados.isEmpty()) return
 
         val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
         val nomeArquivo = "UTT_$timestamp.json"
 
-        try {
-            val jsonFinal = JSONObject()
-            jsonFinal.put("tipo_teste", "UTT")
-            jsonFinal.put("data_hora", timestamp)
-            jsonFinal.put("total_repeticoes_app", contagemRepeticoes)
-            jsonFinal.put("registros", JSONArray(dadosColetados))
+        val json = JSONObject()
+        json.put("tipo_teste", "UTT")
+        json.put("data_hora", timestamp)
+        json.put("sensor", "LINEAR_ACCELERATION")
+        json.put("frequencia", 50)
+        json.put("total_repeticoes_app", contagemRepeticoes)
+        json.put("registros", JSONArray(dadosColetados))
 
-            val fos: FileOutputStream = openFileOutput(nomeArquivo, MODE_PRIVATE)
-            fos.write(jsonFinal.toString(4).toByteArray())
-            fos.close()
+        val fos: FileOutputStream = openFileOutput(nomeArquivo, MODE_PRIVATE)
+        fos.write(json.toString(4).toByteArray())
+        fos.close()
 
-            Toast.makeText(this, "UTT salvo com sucesso!", Toast.LENGTH_SHORT).show()
-        } catch (e: Exception) {
-            e.printStackTrace()
-            Toast.makeText(this, "Erro ao salvar JSON", Toast.LENGTH_SHORT).show()
-        }
+        Toast.makeText(this, "UTT salvo!", Toast.LENGTH_SHORT).show()
     }
 
     private fun iniciarTimer(duracao: Long) {
@@ -211,39 +204,23 @@ class UttExecucaoActivity : AppCompatActivity(), SensorEventListener {
         }.start()
     }
 
-    private fun atualizarUI(novoEstado: EstadoUTT) {
+    private fun atualizarUI(estado: EstadoUTT) {
         layoutBotaoPlay.visibility = View.GONE
         layoutBotoesRodando.visibility = View.GONE
         layoutBotoesConcluido.visibility = View.GONE
 
-        when (novoEstado) {
+        when (estado) {
             EstadoUTT.PRONTO -> {
-                textTimer.visibility = View.VISIBLE
-                textResultado.visibility = View.GONE
                 textTimer.text = "0:30"
-                lblStatus.text = "Tempo Restante"
                 layoutBotaoPlay.visibility = View.VISIBLE
             }
-            EstadoUTT.RODANDO -> {
-                textTimer.visibility = View.VISIBLE
-                textResultado.visibility = View.GONE
-                layoutBotoesRodando.visibility = View.VISIBLE
-            }
+            EstadoUTT.RODANDO -> layoutBotoesRodando.visibility = View.VISIBLE
             EstadoUTT.CONCLUIDO -> {
-                textTimer.visibility = View.GONE
-                textResultado.visibility = View.VISIBLE
                 textResultado.text = "$contagemRepeticoes Repetições"
-                lblStatus.text = "Resultado UTT Concluído"
                 layoutBotoesConcluido.visibility = View.VISIBLE
             }
         }
     }
 
-    override fun onAccuracyChanged(s: Sensor?, a: Int) {}
-
-    override fun onDestroy() {
-        super.onDestroy()
-        timer?.cancel()
-        sensorManager.unregisterListener(this)
-    }
+    override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {}
 }
