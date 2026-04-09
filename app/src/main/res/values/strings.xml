@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">FisioAging</string>
+    <string name="title_activity_selecao_teste">SelecaoTesteActivity</string>
 </resources>

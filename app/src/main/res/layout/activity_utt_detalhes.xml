@@ -9,6 +9,8 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_marginTop="26dp"
+
         android:orientation="vertical"
         android:background="@drawable/card_border_background"
         android:padding="20dp">
@@ -28,6 +30,11 @@
             android:text="O paciente deve realizar a elevação do calcanhar (ponta dos pés) o máximo de vezes possível. \n\nDuração: 30 segundos."
             android:textColor="#555555"
             android:textSize="16sp" />
+
+        <VideoView
+            android:id="@+id/videoView2"
+            android:layout_width="match_parent"
+            android:layout_height="275dp" />
     </LinearLayout>
 
     <Button

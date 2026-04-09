@@ -10,15 +10,16 @@
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_marginTop="26dp"
         android:text="Testes Salvos"
         android:textSize="24sp"
-        android:textStyle="bold"
-        android:layout_marginBottom="16dp"/>
+        android:textStyle="bold" />
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recycler_view_testes"
         android:layout_width="match_parent"
-        android:layout_height="0dp"
+        android:layout_height="371dp"
+
         android:layout_weight="1" />
 
     <Button
