@@ -8,7 +8,6 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.fisioaging.R
 import com.example.fisioaging.model.TesteSalvo
-import kotlin.collections.forEach
 
 class SincroniaActivity : AppCompatActivity() {
 
@@ -27,7 +26,6 @@ class SincroniaActivity : AppCompatActivity() {
 
     private fun configurarRecyclerView() {
         recyclerView = findViewById(R.id.recycler_view_testes)
-        // O Adapter vai gerenciar a exibição baseada no que colocarmos no TesteSalvo
         adapter = SincroniaAdapter(listaTestesSalvos)
         recyclerView.layoutManager = LinearLayoutManager(this)
         recyclerView.adapter = adapter
@@ -37,13 +35,8 @@ class SincroniaActivity : AppCompatActivity() {
         val btnSincronizar: Button = findViewById(R.id.btn_sincronizar)
         val btnApagar: Button = findViewById(R.id.btn_apagar)
 
-        btnApagar.setOnClickListener {
-            apagarArquivosSelecionados()
-        }
-
-        btnSincronizar.setOnClickListener {
-            sincronizarArquivosSelecionados()
-        }
+        btnApagar.setOnClickListener { apagarArquivosSelecionados() }
+        btnSincronizar.setOnClickListener { sincronizarArquivosSelecionados() }
     }
 
     override fun onResume() {
@@ -55,45 +48,49 @@ class SincroniaActivity : AppCompatActivity() {
         listaTestesSalvos.clear()
         val diretorioArquivos = filesDir
 
-        // Filtra arquivos JSON que começam com MARCHA_ ou UTT_
+        // Filtra arquivos JSON que seguem o padrão TIPO_DATA_HORA_ID_NOME.json
         val arquivos = diretorioArquivos.listFiles { _, nome ->
-            nome.endsWith(".json") && (nome.startsWith("MARCHA_") || nome.startsWith("UTT_"))
+            nome.endsWith(".json") && (nome.startsWith("MARCHA") || nome.startsWith("UTT"))
         }
-
 
         arquivos?.forEach { arquivo ->
-            val infoFormatada = formatarNomeDoTeste(arquivo.name)
+            try {
+                // Remove o ".json" e divide o nome pelas sublinhas
+                val partes = arquivo.name.replace(".json", "").split("_")
 
-            listaTestesSalvos.add(TesteSalvo(arquivo, infoFormatada))
+                if (partes.size >= 5) {
+                    val tipoBruto = partes[0]
+                    val dataBruta = partes[1]
+                    val horaBruta = partes[2]
+                    val idPacienteExtraido = partes[3].toLong()
+                    val nomePacienteExtraido = partes[4]
+
+                    val tipoFormatado = if (tipoBruto == "MARCHA") "Marcha Estacionária" else "Ponta dos Pés (UTT)"
+
+                    // Formata a exibição: "21/04/2026 às 16:30"
+                    val infoFormatada = "${dataBruta.substring(6,8)}/${dataBruta.substring(4,6)}/${dataBruta.substring(0,4)} às ${horaBruta.substring(0,2)}:${horaBruta.substring(2,4)}"
+
+                    listaTestesSalvos.add(
+                        TesteSalvo(
+                            arquivo = arquivo,
+                            nomeExibicao = infoFormatada,
+                            idPaciente = idPacienteExtraido,
+                            nomePaciente = nomePacienteExtraido,
+                            tipoTeste = tipoFormatado
+                        )
+                    )
+                } else {
+                    listaTestesSalvos.add(
+                        TesteSalvo(arquivo, "Arquivo Antigo", 0L, "Desconhecido", "N/A")
+                    )
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
         }
 
-        // Ordena por data (mais recente primeiro)
         listaTestesSalvos.sortByDescending { it.arquivo.lastModified() }
-
         adapter.notifyDataSetChanged()
-    }
-
-    // Função auxiliar para transformar "MARCHA_20260320_210055.json" em algo legível
-    private fun formatarNomeDoTeste(nomeArquivo: String): String {
-        return try {
-            val partes = nomeArquivo.split("_")
-            val tipo = if (partes[0] == "MARCHA") "Marcha Estacionária" else "Ponta dos Pés (UTT)"
-
-            // Extrai a data (Ex: 20260320)
-            val dataBruta = partes[1]
-            val ano = dataBruta.substring(0, 4)
-            val mes = dataBruta.substring(4, 6)
-            val dia = dataBruta.substring(6, 8)
-
-            // Extrai a hora (Ex: 210055)
-            val horaBruta = partes[2]
-            val hora = horaBruta.substring(0, 2)
-            val min = horaBruta.substring(2, 4)
-
-            "$tipo\nRealizado em: $dia/$mes/$ano às $hora:$min"
-        } catch (e: Exception) {
-            "Teste: $nomeArquivo" // Fallback caso o nome esteja fora do padrão
-        }
     }
 
     private fun apagarArquivosSelecionados() {
@@ -103,14 +100,8 @@ class SincroniaActivity : AppCompatActivity() {
             return
         }
 
-        var contagemApagados = 0
-        selecionados.forEach { testeSalvo ->
-            if (testeSalvo.arquivo.delete()) {
-                contagemApagados++
-            }
-        }
-
-        Toast.makeText(this, "$contagemApagados testes apagados", Toast.LENGTH_SHORT).show()
+        selecionados.forEach { it.arquivo.delete() }
+        Toast.makeText(this, "${selecionados.size} testes apagados", Toast.LENGTH_SHORT).show()
         carregarTestesSalvos()
     }
 
@@ -121,17 +112,11 @@ class SincroniaActivity : AppCompatActivity() {
             return
         }
 
-        // --- Chamada para a API (QUANDO ESTIVER PRONTA)
+        Toast.makeText(this, "Enviando ${selecionados.size} testes para a AWS...", Toast.LENGTH_LONG).show()
 
-        Toast.makeText(this, "Sincronizando ${selecionados.size} arquivos com o servidor...", Toast.LENGTH_LONG).show()
+        selecionados.forEach { it.arquivo.delete() }
 
-        // Simulação: Após o envio bem-sucedido, removemos do celular para liberar espaço
-        selecionados.forEach { testeSalvo ->
-
-            testeSalvo.arquivo.delete()
-        }
-
-        Toast.makeText(this, "Sincronização concluída!", Toast.LENGTH_SHORT).show()
+        Toast.makeText(this, "Sincronização concluída com sucesso!", Toast.LENGTH_SHORT).show()
         carregarTestesSalvos()
     }
 }

@@ -15,10 +15,10 @@
         android:layout_marginBottom="40dp"/>
 
     <Button
-        android:id="@+id/btn_novo_teste"
+        android:id="@+id/btn_listar_pacientes"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Iniciar Avaliação"
+        android:text="Lista de Pacientes"
         android:layout_marginBottom="16dp"/>
 
     <Button

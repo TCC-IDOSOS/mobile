@@ -1,4 +1,11 @@
 package com.example.fisioaging.model
 
-class Usuario {
-}
+import java.io.Serializable
+
+data class Usuario(
+    val id: Long,
+    val name: String,
+    val profile: String,
+    val email: String,
+    val cpf: String
+): Serializable

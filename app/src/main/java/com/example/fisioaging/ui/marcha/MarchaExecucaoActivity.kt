@@ -14,6 +14,7 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.example.fisioaging.R
+import com.example.fisioaging.model.Usuario // IMPORTANTE: Import do seu modelo
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.FileOutputStream
@@ -52,17 +53,19 @@ class MarchaExecucaoActivity : AppCompatActivity(), SensorEventListener {
     private val dadosColetados = mutableListOf<JSONObject>()
     private var tempoInicioTeste: Long = 0
 
-    // Contagem (máquina de estados)
+    private var paciente: Usuario? = null
+
     private var contagemRepeticoes = 0
     private var ultimoTempo = 0L
     private var fase = 0
-    // 0 = esperando subir | 1 = subindo | 2 = descendo
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_marcha_execucao)
 
-        supportActionBar?.title = "2 Minutos Marcha estacionária"
+        paciente = intent.getSerializableExtra("PACIENTE_SELECIONADO") as? Usuario
+
+        supportActionBar?.title = "Marcha: ${paciente?.name ?: "Desconhecido"}"
 
         inicializarUI()
         configurarSensor()
@@ -90,14 +93,11 @@ class MarchaExecucaoActivity : AppCompatActivity(), SensorEventListener {
 
     private fun configurarSensor() {
         sensorManager = getSystemService(SENSOR_SERVICE) as SensorManager
-
         val sensorLinear = sensorManager.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION)
-        acelerometro = sensorLinear
-            ?: sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
+        acelerometro = sensorLinear ?: sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
     }
 
     private fun configurarBotoes() {
-
         btnPlay.setOnClickListener {
             iniciarColeta()
             iniciarTimer(tempoTotalEmMillis)
@@ -147,29 +147,20 @@ class MarchaExecucaoActivity : AppCompatActivity(), SensorEventListener {
     override fun onSensorChanged(event: SensorEvent?) {
         event?.let { e ->
             if (e.sensor.type == acelerometro?.type) {
-
                 val tempoAtual = System.currentTimeMillis()
                 val tempoRelativo = tempoAtual - tempoInicioTeste
 
-                val x = e.values[0]
-                val y = e.values[1]
-                val z = e.values[2]
-
-                // 🔥 SALVA DADOS
                 val registro = JSONObject()
                 registro.put("time", tempoRelativo)
-                registro.put("x", x)
-                registro.put("y", y)
-                registro.put("z", z)
+                registro.put("x", e.values[0])
+                registro.put("y", e.values[1])
+                registro.put("z", e.values[2])
                 dadosColetados.add(registro)
 
-                // 🧠 CONTAGEM (máquina de estados)
+                val y = e.values[1]
                 when (fase) {
-
                     0 -> if (y > 1.5) fase = 1
-
                     1 -> if (y < 0) fase = 2
-
                     2 -> {
                         if (y < -1.5 && (tempoAtual - ultimoTempo > 400)) {
                             contagemRepeticoes++
@@ -187,22 +178,32 @@ class MarchaExecucaoActivity : AppCompatActivity(), SensorEventListener {
     private fun salvarJSON() {
         if (dadosColetados.isEmpty()) return
 
-        val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
-        val nomeArquivo = "MARCHA_$timestamp.json"
+        // Prepara os dados do paciente para o nome do arquivo
+        val idPac = paciente?.id ?: 0
+        val nomePac = paciente?.name?.replace(" ", "") ?: "Desconhecido"
+
+        // Formata data e hora separadamente para o padrão que a SincroniaActivity espera (split por _)
+        val dataStr = SimpleDateFormat("yyyyMMdd", Locale.getDefault()).format(Date())
+        val horaStr = SimpleDateFormat("HHmmss", Locale.getDefault()).format(Date())
+
+        val nomeArquivo = "MARCHA_${dataStr}_${horaStr}_${idPac}_${nomePac}.json"
 
         val json = JSONObject()
+        json.put("userId", idPac) // Vínculo essencial para o banco de dados da AWS
         json.put("tipo_teste", "MARCHA")
-        json.put("data_hora", timestamp)
-        json.put("sensor", acelerometro?.type.toString())
-        json.put("frequencia", 50)
+        json.put("data_hora", "${dataStr}_${horaStr}")
         json.put("total_repeticoes_app", contagemRepeticoes)
         json.put("registros", JSONArray(dadosColetados))
 
-        val fos: FileOutputStream = openFileOutput(nomeArquivo, Context.MODE_PRIVATE)
-        fos.write(json.toString(4).toByteArray())
-        fos.close()
-
-        Toast.makeText(this, "Marcha salva!", Toast.LENGTH_SHORT).show()
+        try {
+            val fos: FileOutputStream = openFileOutput(nomeArquivo, Context.MODE_PRIVATE)
+            fos.write(json.toString(4).toByteArray())
+            fos.close()
+            Toast.makeText(this, "Teste de ${paciente?.name} salvo!", Toast.LENGTH_SHORT).show()
+        } catch (e: Exception) {
+            Toast.makeText(this, "Erro ao salvar arquivo", Toast.LENGTH_SHORT).show()
+            e.printStackTrace()
+        }
     }
 
     private fun iniciarTimer(duracao: Long) {
@@ -216,7 +217,6 @@ class MarchaExecucaoActivity : AppCompatActivity(), SensorEventListener {
             override fun onFinish() {
                 pararColeta()
                 atualizarUI(EstadoTeste.CONCLUIDO)
-                Toast.makeText(this@MarchaExecucaoActivity, "Teste concluído!", Toast.LENGTH_LONG).show()
             }
         }.start()
     }
@@ -231,11 +231,9 @@ class MarchaExecucaoActivity : AppCompatActivity(), SensorEventListener {
                 textTimer.text = "2:00"
                 layoutBotaoPlay.visibility = View.VISIBLE
             }
-
             EstadoTeste.RODANDO -> {
                 layoutBotoesRodando.visibility = View.VISIBLE
             }
-
             EstadoTeste.CONCLUIDO -> {
                 textResultado.text = "$contagemRepeticoes Repetições"
                 layoutBotoesConcluido.visibility = View.VISIBLE

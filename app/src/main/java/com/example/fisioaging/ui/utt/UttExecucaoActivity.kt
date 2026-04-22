@@ -1,5 +1,6 @@
 package com.example.fisioaging.ui.utt
 
+import android.content.Context
 import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
@@ -13,6 +14,7 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.example.fisioaging.R
+import com.example.fisioaging.model.Usuario
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.FileOutputStream
@@ -47,19 +49,24 @@ class UttExecucaoActivity : AppCompatActivity(), SensorEventListener {
     private val dadosColetados = mutableListOf<JSONObject>()
     private var tempoInicioTeste: Long = 0
 
+    private var paciente: Usuario? = null
+
     private var contagemRepeticoes = 0
     private var ultimoTempo = 0L
-
-    // Máquina de estados
     private var fase = 0
-    // 0 = esperando subir | 1 = subindo | 2 = descendo
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_utt_execucao)
 
-        supportActionBar?.title = "Teste UTT - Na Ponta dos Pés"
+        paciente = intent.getSerializableExtra("PACIENTE_SELECIONADO") as? Usuario
+        supportActionBar?.title = "UTT: ${paciente?.name ?: "Ponta dos Pés"}"
 
+        if (paciente == null) {
+            Toast.makeText(this, "ERRO: Paciente não recebeu dados!", Toast.LENGTH_LONG).show()
+        } else {
+            Toast.makeText(this, "Paciente: ${paciente?.name}", Toast.LENGTH_SHORT).show()
+        }
         inicializarUI()
         configurarSensor()
         configurarBotoes()
@@ -90,7 +97,6 @@ class UttExecucaoActivity : AppCompatActivity(), SensorEventListener {
     }
 
     private fun configurarBotoes() {
-
         btnPlay.setOnClickListener {
             iniciarColeta()
             iniciarTimer(tempoTotalEmMillis)
@@ -136,29 +142,20 @@ class UttExecucaoActivity : AppCompatActivity(), SensorEventListener {
     override fun onSensorChanged(event: SensorEvent?) {
         event?.let { e ->
             if (e.sensor.type == Sensor.TYPE_LINEAR_ACCELERATION) {
-
                 val tempoAtual = System.currentTimeMillis()
                 val tempoRelativo = tempoAtual - tempoInicioTeste
 
-                val x = e.values[0]
-                val y = e.values[1]
-                val z = e.values[2]
-
-                // 🔥 SALVA DADOS
                 val registro = JSONObject()
                 registro.put("time", tempoRelativo)
-                registro.put("x", x)
-                registro.put("y", y)
-                registro.put("z", z)
+                registro.put("x", e.values[0])
+                registro.put("y", e.values[1])
+                registro.put("z", e.values[2])
                 dadosColetados.add(registro)
 
-                // 🧠 CONTAGEM (máquina de estados)
+                val y = e.values[1]
                 when (fase) {
-
                     0 -> if (y > 1.2) fase = 1
-
                     1 -> if (y < 0) fase = 2
-
                     2 -> {
                         if (y < -1.2 && (tempoAtual - ultimoTempo > 600)) {
                             contagemRepeticoes++
@@ -174,22 +171,28 @@ class UttExecucaoActivity : AppCompatActivity(), SensorEventListener {
     private fun salvarJSON() {
         if (dadosColetados.isEmpty()) return
 
-        val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
-        val nomeArquivo = "UTT_$timestamp.json"
+        val idPac = paciente?.id ?: 0
+        val nomePac = paciente?.name?.replace(" ", "") ?: "Desconhecido"
+        val dataStr = SimpleDateFormat("yyyyMMdd", Locale.getDefault()).format(Date())
+        val horaStr = SimpleDateFormat("HHmmss", Locale.getDefault()).format(Date())
+        val nomeArquivo = "UTT_${dataStr}_${horaStr}_${idPac}_${nomePac}.json"
 
         val json = JSONObject()
+        json.put("userId", idPac) // Vínculo para a AWS
         json.put("tipo_teste", "UTT")
-        json.put("data_hora", timestamp)
-        json.put("sensor", "LINEAR_ACCELERATION")
-        json.put("frequencia", 50)
+        json.put("data_hora", "${dataStr}_${horaStr}")
         json.put("total_repeticoes_app", contagemRepeticoes)
         json.put("registros", JSONArray(dadosColetados))
 
-        val fos: FileOutputStream = openFileOutput(nomeArquivo, MODE_PRIVATE)
-        fos.write(json.toString(4).toByteArray())
-        fos.close()
-
-        Toast.makeText(this, "UTT salvo!", Toast.LENGTH_SHORT).show()
+        try {
+            val fos: FileOutputStream = openFileOutput(nomeArquivo, MODE_PRIVATE)
+            fos.write(json.toString(4).toByteArray())
+            fos.close()
+            Toast.makeText(this, "UTT de ${paciente?.name} salvo!", Toast.LENGTH_SHORT).show()
+        } catch (e: Exception) {
+            Toast.makeText(this, "Erro ao salvar UTT", Toast.LENGTH_SHORT).show()
+            e.printStackTrace()
+        }
     }
 
     private fun iniciarTimer(duracao: Long) {
@@ -197,7 +200,6 @@ class UttExecucaoActivity : AppCompatActivity(), SensorEventListener {
             override fun onTick(ms: Long) {
                 textTimer.text = String.format("0:%02d", ms / 1000)
             }
-
             override fun onFinish() {
                 pararTeste()
             }

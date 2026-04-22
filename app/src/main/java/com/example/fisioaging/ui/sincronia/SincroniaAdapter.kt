@@ -9,15 +9,14 @@ import androidx.recyclerview.widget.RecyclerView
 import com.example.fisioaging.R
 import com.example.fisioaging.model.TesteSalvo
 
-// REMOVIDO: data class TesteSalvo (Ela deve existir apenas no arquivo TesteSalvo.kt)
-// REMOVIDO: import androidx.compose.ui.test.isSelected (Isso é para testes e causa erro)
-
 class SincroniaAdapter(private val testes: MutableList<TesteSalvo>) :
     RecyclerView.Adapter<SincroniaAdapter.TesteViewHolder>() {
 
     class TesteViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         val checkBox: CheckBox = view.findViewById(R.id.checkbox_teste)
         val nomeArquivo: TextView = view.findViewById(R.id.text_nome_arquivo)
+        val nomePaciente: TextView = view.findViewById(R.id.text_nome_paciente)
+        val tipoTeste: TextView = view.findViewById(R.id.text_tipo_teste)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): TesteViewHolder {
@@ -29,10 +28,11 @@ class SincroniaAdapter(private val testes: MutableList<TesteSalvo>) :
     override fun onBindViewHolder(holder: TesteViewHolder, position: Int) {
         val teste = testes[position]
 
-        // Usa o nome formatado que a Activity enviou
         holder.nomeArquivo.text = teste.nomeExibicao
+        holder.nomePaciente.text = "Paciente: ${teste.nomePaciente}"
+        holder.tipoTeste.text = "Tipo: ${teste.tipoTeste}"
 
-        // Evita bugs ao reciclar a lista
+        // Lógica do Checkbox
         holder.checkBox.setOnCheckedChangeListener(null)
         holder.checkBox.isChecked = teste.isSelecionado
 
@@ -43,7 +43,6 @@ class SincroniaAdapter(private val testes: MutableList<TesteSalvo>) :
 
     override fun getItemCount() = testes.size
 
-    // Filtra os itens que o usuário marcou o Checkbox
     fun getItensSelecionados(): List<TesteSalvo> {
         return testes.filter { it.isSelecionado }
     }

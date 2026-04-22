@@ -5,6 +5,7 @@ import android.os.Bundle
 import android.widget.Button
 import androidx.appcompat.app.AppCompatActivity
 import com.example.fisioaging.R
+import com.example.fisioaging.ui.pacientes.ListaPacientesActivity
 import com.example.fisioaging.ui.selecao.SelecaoTesteActivity
 import com.example.fisioaging.ui.sincronia.SincroniaActivity
 
@@ -16,16 +17,18 @@ class MainActivity : AppCompatActivity() {
 
         supportActionBar?.title = "FisioAging"
 
-        val btnNovoTeste: Button = findViewById(R.id.btn_novo_teste)
-        val btnSincronizar: Button = findViewById(R.id.btn_sincronizar)
 
-        btnNovoTeste.setOnClickListener {
-            val intent = Intent(this, SelecaoTesteActivity::class.java)
-            startActivity(intent)
-        }
+        val btnSincronizar: Button = findViewById(R.id.btn_sincronizar)
+        val btnPacientes = findViewById<Button>(R.id.btn_listar_pacientes)
+
 
         btnSincronizar.setOnClickListener {
             val intent = Intent(this, SincroniaActivity::class.java)
+            startActivity(intent)
+        }
+
+        btnPacientes.setOnClickListener {
+            val intent = Intent(this, ListaPacientesActivity::class.java)
             startActivity(intent)
         }
     }
