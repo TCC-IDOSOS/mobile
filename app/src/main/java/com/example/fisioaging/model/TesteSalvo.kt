@@ -8,6 +8,7 @@ data class TesteSalvo(
     val nomeExibicao: String,
     val idPaciente: Long,
     val nomePaciente: String,
+    val emailPaciente: String,
     val tipoTeste: String,
     var isSelecionado: Boolean = false
 ) : Serializable

@@ -194,12 +194,16 @@ class UttExecucaoActivity : AppCompatActivity(), SensorEventListener {
 
         val idPac = paciente?.id ?: 0
         val nomePac = paciente?.name?.replace(" ", "") ?: "Desconhecido"
+        val emailPac = paciente?.email?.replace(" ", "") ?: "Desconhecido"
+        val emailSeguro = emailPac
+            .replace("@", "-at-")
+            .replace(".", "-")
         val generoPac = paciente?.genre ?: "N/A"
         val idadePac = calcularIdade(paciente?.birthDate)
 
         val dataStr = SimpleDateFormat("yyyyMMdd", Locale.getDefault()).format(Date())
         val horaStr = SimpleDateFormat("HHmmss", Locale.getDefault()).format(Date())
-        val nomeArquivo = "UTT_${dataStr}_${horaStr}_${idPac}_${nomePac}.json"
+        val nomeArquivo = "MARCHA_${dataStr}_${horaStr}_${idPac}_${nomePac}_${emailPac}.json"
 
         val json = JSONObject()
         json.put("userId", idPac)

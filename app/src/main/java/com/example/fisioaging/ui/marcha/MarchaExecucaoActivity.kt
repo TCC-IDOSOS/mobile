@@ -195,6 +195,7 @@ class MarchaExecucaoActivity : AppCompatActivity(), SensorEventListener {
 
         val idPac = paciente?.id ?: 0
         val nomePac = paciente?.name?.replace(" ", "") ?: "Desconhecido"
+        val emailPac = paciente?.email?.replace(" ", "") ?: "Desconhecido"
 
         val generoPac = paciente?.genre ?: "Não informado"
 
@@ -203,7 +204,7 @@ class MarchaExecucaoActivity : AppCompatActivity(), SensorEventListener {
         val dataStr = SimpleDateFormat("yyyyMMdd", Locale.getDefault()).format(Date())
         val horaStr = SimpleDateFormat("HHmmss", Locale.getDefault()).format(Date())
 
-        val nomeArquivo = "MARCHA_${dataStr}_${horaStr}_${idPac}_${nomePac}.json"
+        val nomeArquivo = "MARCHA_${dataStr}_${horaStr}_${idPac}_${nomePac}_${emailPac}.json"
 
         val json = JSONObject()
         json.put("userId", idPac)

@@ -7,7 +7,15 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.fisioaging.R
+import com.example.fisioaging.model.TesteRequest
 import com.example.fisioaging.model.TesteSalvo
+import com.example.fisioaging.network.RetrofitClient
+import com.google.gson.Gson
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import kotlin.math.log
 
 class SincroniaActivity : AppCompatActivity() {
 
@@ -64,6 +72,7 @@ class SincroniaActivity : AppCompatActivity() {
                     val horaBruta = partes[2]
                     val idPacienteExtraido = partes[3].toLong()
                     val nomePacienteExtraido = partes[4]
+                    val emailPacienteExtraido = partes.getOrNull(5) ?: "desconhecido"
 
                     val tipoFormatado = if (tipoBruto == "MARCHA") "Marcha Estacionária" else "Ponta dos Pés (UTT)"
 
@@ -76,12 +85,14 @@ class SincroniaActivity : AppCompatActivity() {
                             nomeExibicao = infoFormatada,
                             idPaciente = idPacienteExtraido,
                             nomePaciente = nomePacienteExtraido,
+                            emailPaciente = emailPacienteExtraido,
                             tipoTeste = tipoFormatado
                         )
                     )
                 } else {
                     listaTestesSalvos.add(
-                        TesteSalvo(arquivo, "Arquivo Antigo", 0L, "Desconhecido", "N/A")
+                        TesteSalvo(arquivo, "Arquivo Antigo", 0L, "Desconhecido", "desconhecido@teste.com","N/A")
+
                     )
                 }
             } catch (e: Exception) {
@@ -107,16 +118,41 @@ class SincroniaActivity : AppCompatActivity() {
 
     private fun sincronizarArquivosSelecionados() {
         val selecionados = adapter.getItensSelecionados()
+
         if (selecionados.isEmpty()) {
             Toast.makeText(this, "Selecione testes para sincronizar", Toast.LENGTH_SHORT).show()
             return
         }
 
-        Toast.makeText(this, "Enviando ${selecionados.size} testes para a AWS...", Toast.LENGTH_LONG).show()
+        Toast.makeText(this, "Enviando ${selecionados.size} testes...", Toast.LENGTH_LONG).show()
 
-        selecionados.forEach { it.arquivo.delete() }
+        CoroutineScope(Dispatchers.IO).launch {
+            val gson = Gson()
 
-        Toast.makeText(this, "Sincronização concluída com sucesso!", Toast.LENGTH_SHORT).show()
-        carregarTestesSalvos()
+            selecionados.forEach { testeSalvo ->
+                try {
+                    val json = testeSalvo.arquivo.readText()
+
+                    val request = gson.fromJson(json, TesteRequest::class.java)
+                    println(testeSalvo.emailPaciente)
+
+
+                    RetrofitClient.instance.enviarTeste(
+                        email = testeSalvo.emailPaciente,
+                        body = request
+                    )
+
+                    testeSalvo.arquivo.delete()
+
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            }
+
+            withContext(Dispatchers.Main) {
+                Toast.makeText(this@SincroniaActivity, "Sincronização concluída!", Toast.LENGTH_SHORT).show()
+                carregarTestesSalvos()
+            }
+        }
     }
 }
