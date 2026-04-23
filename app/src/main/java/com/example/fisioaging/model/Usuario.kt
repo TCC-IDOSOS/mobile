@@ -7,5 +7,7 @@ data class Usuario(
     val name: String,
     val profile: String,
     val email: String,
-    val cpf: String
+    val cpf: String,
+    val genre: String,
+    val birthDate: String,
 ): Serializable

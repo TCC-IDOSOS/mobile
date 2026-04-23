@@ -37,6 +37,17 @@
             android:layout_height="275dp" />
     </LinearLayout>
 
+    <EditText
+        android:id="@+id/edt_peso_paciente"
+        android:layout_width="match_parent"
+        android:layout_height="40dp"
+        android:layout_margin="16dp"
+        android:hint="Digite o peso do paciente (kg)"
+        android:inputType="numberDecimal"
+        android:textColor="#070000"
+        android:textColorHighlight="#070000"
+        android:textColorHint="#070000"
+        android:textColorLink="#070000" />
     <Button
         android:id="@+id/btn_iniciar_utt"
         android:layout_width="match_parent"

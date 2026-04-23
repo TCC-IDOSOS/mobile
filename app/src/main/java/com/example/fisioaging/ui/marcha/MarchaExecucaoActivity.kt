@@ -20,6 +20,9 @@ import org.json.JSONObject
 import java.io.FileOutputStream
 import java.text.SimpleDateFormat
 import java.util.*
+import java.time.LocalDate
+import java.time.Period
+import java.time.format.DateTimeFormatter
 
 private enum class EstadoTeste { PRONTO, RODANDO, CONCLUIDO }
 
@@ -175,21 +178,37 @@ class MarchaExecucaoActivity : AppCompatActivity(), SensorEventListener {
 
     override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {}
 
+    private fun calcularIdade(dataNascString: String?): Int {
+        if (dataNascString.isNullOrEmpty()) return 0
+        return try {
+            val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
+            val dataNascimento = LocalDate.parse(dataNascString, formatter)
+            val hoje = LocalDate.now()
+            Period.between(dataNascimento, hoje).years
+        } catch (e: Exception) {
+            0
+        }
+    }
+
     private fun salvarJSON() {
         if (dadosColetados.isEmpty()) return
 
-        // Prepara os dados do paciente para o nome do arquivo
         val idPac = paciente?.id ?: 0
         val nomePac = paciente?.name?.replace(" ", "") ?: "Desconhecido"
 
-        // Formata data e hora separadamente para o padrão que a SincroniaActivity espera (split por _)
+        val generoPac = paciente?.genre ?: "Não informado"
+
+        val idadePac = calcularIdade(paciente?.birthDate)
+
         val dataStr = SimpleDateFormat("yyyyMMdd", Locale.getDefault()).format(Date())
         val horaStr = SimpleDateFormat("HHmmss", Locale.getDefault()).format(Date())
 
         val nomeArquivo = "MARCHA_${dataStr}_${horaStr}_${idPac}_${nomePac}.json"
 
         val json = JSONObject()
-        json.put("userId", idPac) // Vínculo essencial para o banco de dados da AWS
+        json.put("userId", idPac)
+        json.put("sexo", generoPac)
+        json.put("idade", idadePac)
         json.put("tipo_teste", "MARCHA")
         json.put("data_hora", "${dataStr}_${horaStr}")
         json.put("total_repeticoes_app", contagemRepeticoes)
@@ -199,9 +218,8 @@ class MarchaExecucaoActivity : AppCompatActivity(), SensorEventListener {
             val fos: FileOutputStream = openFileOutput(nomeArquivo, Context.MODE_PRIVATE)
             fos.write(json.toString(4).toByteArray())
             fos.close()
-            Toast.makeText(this, "Teste de ${paciente?.name} salvo!", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "Teste salvo com sucesso!", Toast.LENGTH_SHORT).show()
         } catch (e: Exception) {
-            Toast.makeText(this, "Erro ao salvar arquivo", Toast.LENGTH_SHORT).show()
             e.printStackTrace()
         }
     }

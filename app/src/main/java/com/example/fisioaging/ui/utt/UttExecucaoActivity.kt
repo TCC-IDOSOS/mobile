@@ -20,12 +20,16 @@ import org.json.JSONObject
 import java.io.FileOutputStream
 import java.text.SimpleDateFormat
 import java.util.*
-
+import java.time.LocalDate
+import java.time.Period
+import java.time.format.DateTimeFormatter
 private enum class EstadoUTT { PRONTO, RODANDO, CONCLUIDO }
 
 class UttExecucaoActivity : AppCompatActivity(), SensorEventListener {
 
     private lateinit var textTimer: TextView
+
+    private var pesoPaciente: Double = 0.0
     private lateinit var textResultado: TextView
     private lateinit var lblStatus: TextView
 
@@ -72,6 +76,9 @@ class UttExecucaoActivity : AppCompatActivity(), SensorEventListener {
         configurarBotoes()
 
         atualizarUI(EstadoUTT.PRONTO)
+
+        paciente = intent.getSerializableExtra("PACIENTE_SELECIONADO") as? Usuario
+        pesoPaciente = intent.getDoubleExtra("PESO_PACIENTE", 0.0)
     }
 
     private fun inicializarUI() {
@@ -168,29 +175,51 @@ class UttExecucaoActivity : AppCompatActivity(), SensorEventListener {
         }
     }
 
+
+
+    private fun calcularIdade(dataNascString: String?): Int {
+        if (dataNascString.isNullOrEmpty()) return 0
+        return try {
+            val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
+            val dataNascimento = LocalDate.parse(dataNascString, formatter)
+            val hoje = LocalDate.now()
+            Period.between(dataNascimento, hoje).years
+        } catch (e: Exception) {
+            0
+        }
+    }
+
     private fun salvarJSON() {
         if (dadosColetados.isEmpty()) return
 
         val idPac = paciente?.id ?: 0
         val nomePac = paciente?.name?.replace(" ", "") ?: "Desconhecido"
+        val generoPac = paciente?.genre ?: "N/A"
+        val idadePac = calcularIdade(paciente?.birthDate)
+
         val dataStr = SimpleDateFormat("yyyyMMdd", Locale.getDefault()).format(Date())
         val horaStr = SimpleDateFormat("HHmmss", Locale.getDefault()).format(Date())
         val nomeArquivo = "UTT_${dataStr}_${horaStr}_${idPac}_${nomePac}.json"
 
         val json = JSONObject()
-        json.put("userId", idPac) // Vínculo para a AWS
+        json.put("userId", idPac)
+        json.put("sexo", generoPac)
+        json.put("idade", idadePac)
+
+        // NOVO CAMPO SOLICITADO
+        json.put("peso", pesoPaciente)
+
         json.put("tipo_teste", "UTT")
         json.put("data_hora", "${dataStr}_${horaStr}")
         json.put("total_repeticoes_app", contagemRepeticoes)
         json.put("registros", JSONArray(dadosColetados))
 
         try {
-            val fos: FileOutputStream = openFileOutput(nomeArquivo, MODE_PRIVATE)
+            val fos: FileOutputStream = openFileOutput(nomeArquivo, Context.MODE_PRIVATE)
             fos.write(json.toString(4).toByteArray())
             fos.close()
-            Toast.makeText(this, "UTT de ${paciente?.name} salvo!", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "Teste salvo com sucesso!", Toast.LENGTH_SHORT).show()
         } catch (e: Exception) {
-            Toast.makeText(this, "Erro ao salvar UTT", Toast.LENGTH_SHORT).show()
             e.printStackTrace()
         }
     }
