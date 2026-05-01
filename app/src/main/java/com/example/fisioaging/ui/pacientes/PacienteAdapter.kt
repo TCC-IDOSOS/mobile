@@ -9,13 +9,28 @@ import com.example.fisioaging.R
 import com.example.fisioaging.model.Usuario
 
 class PacienteAdapter(
-    private val pacientes: List<Usuario>,
+    private val listaOriginal: List<Usuario>,
     private val onClick: (Usuario) -> Unit
 ) : RecyclerView.Adapter<PacienteAdapter.ViewHolder>() {
+
+    private var pacientesExibidos: MutableList<Usuario> = listaOriginal.toMutableList()
 
     class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         val txtNome: TextView = view.findViewById(R.id.txt_nome_paciente)
         val txtCpf: TextView = view.findViewById(R.id.txt_cpf_paciente)
+    }
+
+    fun filtrar(query: String) {
+        val filtro = query.lowercase().trim()
+        pacientesExibidos = if (filtro.isEmpty()) {
+            listaOriginal.toMutableList()
+        } else {
+            listaOriginal.filter {
+                it.name.lowercase().contains(filtro) ||
+                        (it.cpf?.contains(filtro) ?: false)
+            }.toMutableList()
+        }
+        notifyDataSetChanged()
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
@@ -24,11 +39,11 @@ class PacienteAdapter(
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        val paciente = pacientes[position]
+        val paciente = pacientesExibidos[position]
         holder.txtNome.text = paciente.name
         holder.txtCpf.text = "CPF: ${paciente.cpf}"
         holder.itemView.setOnClickListener { onClick(paciente) }
     }
 
-    override fun getItemCount() = pacientes.size
+    override fun getItemCount() = pacientesExibidos.size
 }
