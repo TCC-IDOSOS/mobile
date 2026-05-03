@@ -2,6 +2,8 @@ package com.example.fisioaging.ui.pacientes
 
 import android.content.Intent
 import android.os.Bundle
+import android.view.Menu
+import android.view.MenuItem
 import android.view.View
 import android.widget.ProgressBar
 import android.widget.Toast
@@ -11,7 +13,9 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.fisioaging.R
 import com.example.fisioaging.network.RetrofitClient
+import com.example.fisioaging.ui.login.LoginActivity
 import com.example.fisioaging.ui.selecao.SelecaoTesteActivity
+import com.example.fisioaging.util.SessionManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -23,7 +27,7 @@ class ListaPacientesActivity : AppCompatActivity() {
     private lateinit var adapter: PacienteAdapter
     private lateinit var loadingBar: ProgressBar
     private lateinit var searchView: SearchView
-
+    private lateinit var sessionManager: SessionManager
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -31,6 +35,7 @@ class ListaPacientesActivity : AppCompatActivity() {
 
         supportActionBar?.title = "Selecionar Paciente"
 
+        sessionManager = SessionManager(this)
         loadingBar = findViewById(R.id.progress_loading)
         recyclerView = findViewById(R.id.recycler_pacientes)
         searchView = findViewById(R.id.searchViewPacientes)
@@ -46,14 +51,14 @@ class ListaPacientesActivity : AppCompatActivity() {
         val searchEditText = searchView.findViewById<android.widget.EditText>(androidx.appcompat.R.id.search_src_text)
         searchEditText.setTextColor(android.graphics.Color.BLACK)
         searchEditText.setHintTextColor(android.graphics.Color.GRAY)
+
         val searchIcon = searchView.findViewById<android.widget.ImageView>(androidx.appcompat.R.id.search_mag_icon)
         searchIcon.setColorFilter(android.graphics.Color.BLACK)
+
         searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
             override fun onQueryTextSubmit(query: String?): Boolean {
                 return false
             }
-
-
 
             override fun onQueryTextChange(newText: String?): Boolean {
                 if (::adapter.isInitialized) {
@@ -66,12 +71,39 @@ class ListaPacientesActivity : AppCompatActivity() {
         buscarPacientes()
     }
 
+    override fun onCreateOptionsMenu(menu: Menu?): Boolean {
+        menuInflater.inflate(R.menu.main_menu, menu)
+        return true
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        return when (item.itemId) {
+
+            R.id.action_logout -> {
+                deslogar()
+                true
+            }
+            else -> super.onOptionsItemSelected(item)
+        }
+    }
+
+    private fun deslogar() {
+        sessionManager.clearSession()
+        val intent = Intent(this, LoginActivity::class.java)
+        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        startActivity(intent)
+        finish()
+    }
+
     private fun buscarPacientes() {
         loadingBar.visibility = View.VISIBLE
 
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                val todosUsuarios = RetrofitClient.instance.getUsuarios()
+                val token = sessionManager.fetchAuthToken()
+                val service = RetrofitClient.create(token)
+                val todosUsuarios = service.getUsuarios()
+
                 val pacientes = todosUsuarios.filter { it.profile == "Paciente" }
 
                 withContext(Dispatchers.Main) {
