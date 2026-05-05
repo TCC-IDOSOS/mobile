@@ -13,8 +13,8 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.fisioaging.R
 import com.example.fisioaging.network.RetrofitClient
+import com.example.fisioaging.ui.historico.HistoricoTestesActivity
 import com.example.fisioaging.ui.login.LoginActivity
-import com.example.fisioaging.ui.selecao.SelecaoTesteActivity
 import com.example.fisioaging.util.SessionManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -114,7 +114,7 @@ class ListaPacientesActivity : AppCompatActivity() {
                     }
 
                     adapter = PacienteAdapter(pacientes) { paciente ->
-                        val intent = Intent(this@ListaPacientesActivity, SelecaoTesteActivity::class.java)
+                        val intent = Intent(this@ListaPacientesActivity, HistoricoTestesActivity::class.java)
                         intent.putExtra("PACIENTE_SELECIONADO", paciente)
                         startActivity(intent)
                     }

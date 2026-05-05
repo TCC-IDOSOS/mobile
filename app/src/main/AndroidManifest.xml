@@ -21,6 +21,14 @@
         android:theme="@style/Theme.FisioAging">
 
         <activity
+            android:name=".ui.historico.HistoricoTestesActivity"
+            android:exported="false"
+            android:label="Histórico de Testes" />
+        <activity
+            android:name=".ui.historico.ResultadoTesteActivity"
+            android:exported="false"
+            android:label="Detalhes do Teste" />
+        <activity
             android:name=".ui.selecao.SelecaoTesteActivity"
             android:exported="false"
             android:label="@string/title_activity_selecao_teste"
