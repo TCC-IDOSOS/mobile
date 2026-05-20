@@ -23,41 +23,53 @@
         <activity
             android:name=".ui.historico.HistoricoTestesActivity"
             android:exported="false"
-            android:label="Histórico de Testes" />
+            android:label="Histórico de Testes"
+            android:screenOrientation="portrait"/>
+
         <activity
             android:name=".ui.historico.ResultadoTesteActivity"
             android:exported="false"
-            android:label="Detalhes do Teste" />
+            android:label="Detalhes do Teste"
+            android:screenOrientation="portrait"/>
         <activity
             android:name=".ui.selecao.SelecaoTesteActivity"
             android:exported="false"
             android:label="@string/title_activity_selecao_teste"
-            android:theme="@style/Theme.FisioAging" />
+            android:theme="@style/Theme.FisioAging"
+            android:screenOrientation="portrait"/>
         <activity
             android:name=".ui.main.MainActivity"
-            android:exported="true">
+            android:exported="true"
+            android:screenOrientation="portrait">
         </activity>
         <activity
             android:name=".ui.marcha.MarchaDetalhesActivity"
-            android:label="Detalhes do Teste" />
+            android:label="Detalhes do Teste"
+            android:screenOrientation="portrait"/>
         <activity
             android:name=".ui.marcha.MarchaExecucaoActivity"
-            android:label="Teste em Andamento" />
+            android:label="Teste em Andamento"
+            android:screenOrientation="portrait"/>
         <activity
             android:name=".ui.sincronia.SincroniaActivity"
-            android:label="Sincronizar Testes" />
+            android:label="Sincronizar Testes"
+            android:screenOrientation="portrait"/>
         <activity
             android:name=".ui.utt.UttDetalhesActivity"
-            android:label="Instruções UTT" />
+            android:label="Instruções UTT"
+            android:screenOrientation="portrait"/>
         <activity
             android:name=".ui.utt.UttExecucaoActivity"
-            android:label="Teste UTT" />
+            android:label="Teste UTT"
+            android:screenOrientation="portrait"/>
         <activity
             android:name=".ui.pacientes.ListaPacientesActivity"
-            android:exported="false" />
+            android:exported="false"
+            android:screenOrientation="portrait"/>
         <activity
             android:name=".ui.login.LoginActivity"
-            android:exported="true">
+            android:exported="true"
+            android:screenOrientation="portrait">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />

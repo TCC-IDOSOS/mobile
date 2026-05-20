@@ -16,5 +16,6 @@ data class Registro(
     val time: Int,
     val x: Double,
     val y: Double,
-    val z: Double
+    val z:Double,
+    val sensor: String
 )

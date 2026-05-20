@@ -15,6 +15,7 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.example.fisioaging.R
 import com.example.fisioaging.model.Usuario
+import com.example.fisioaging.util.SessionManager
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.FileOutputStream
@@ -55,6 +56,7 @@ class UttExecucaoActivity : AppCompatActivity(), SensorEventListener {
     private var tempoInicioTeste: Long = 0
 
     private var paciente: Usuario? = null
+    private lateinit var sessionManager: SessionManager
 
     private var contagemRepeticoes = 0
     private var ultimoTempo = 0L
@@ -66,6 +68,8 @@ class UttExecucaoActivity : AppCompatActivity(), SensorEventListener {
 
         paciente = intent.getSerializableExtra("PACIENTE_SELECIONADO") as? Usuario
         supportActionBar?.title = "UTT: ${paciente?.name ?: "Ponta dos Pés"}"
+
+        sessionManager = SessionManager(this)
 
         if (paciente == null) {
             Toast.makeText(this, "ERRO: Paciente não recebeu dados!", Toast.LENGTH_LONG).show()
@@ -197,8 +201,12 @@ class UttExecucaoActivity : AppCompatActivity(), SensorEventListener {
         val nomePac = paciente?.name?.replace(" ", "") ?: "Desconhecido"
         val emailPac = paciente?.email?.replace(" ", "") ?: "Desconhecido"
         val emailCodificado = URLEncoder.encode(emailPac, "UTF-8")
-        val generoPac = paciente?.genre ?: "N/A"
+        val generoPac = paciente?.genre ?: "Não informado"
         val idadePac = calcularIdade(paciente?.birthDate)
+
+        val idProfissional = sessionManager.fetchUserId()
+        val emailProfissional = sessionManager.fetchProfessionalEmail()
+        val cnpjUnidade = sessionManager.fetchHealthUnitCnpj()
 
         val dataStr = SimpleDateFormat("yyyyMMdd", Locale.getDefault()).format(Date())
         val horaStr = SimpleDateFormat("HHmmss", Locale.getDefault()).format(Date())
@@ -209,23 +217,23 @@ class UttExecucaoActivity : AppCompatActivity(), SensorEventListener {
         json.put("data_hora", "${dataStr}_${horaStr}")
         json.put("sensor", "ANDROID")
         json.put("frequencia", 50)
+        json.put("total_repeticoes_app", contagemRepeticoes)
+        json.put("id_profissional", idProfissional)
+        json.put("email_profissional", emailProfissional)
         json.put("sexo", generoPac)
         json.put("idade", idadePac)
-
-        // NOVO CAMPO SOLICITADO
         json.put("massa_kg", pesoPaciente)
-
-        json.put("data_hora", "${dataStr}_${horaStr}")
-        json.put("total_repeticoes_app", contagemRepeticoes)
         json.put("registros", JSONArray(dadosColetados))
+        json.put("unidadeSaudeCnpj", cnpjUnidade)
 
         try {
             val fos: FileOutputStream = openFileOutput(nomeArquivo, Context.MODE_PRIVATE)
             fos.write(json.toString(4).toByteArray())
             fos.close()
-            Toast.makeText(this, "Teste salvo com sucesso!", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "Teste UTT salvo com sucesso!", Toast.LENGTH_SHORT).show()
         } catch (e: Exception) {
             e.printStackTrace()
+            Toast.makeText(this, "Erro ao salvar o teste UTT.", Toast.LENGTH_SHORT).show()
         }
     }
 

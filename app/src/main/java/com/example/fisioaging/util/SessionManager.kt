@@ -12,7 +12,25 @@ class SessionManager(context: Context) {
 
     fun fetchAuthToken(): String? = prefs.getString("auth_token", null)
 
+    fun saveUserId(userId: Int) {
+        prefs.edit().putInt("user_id", userId).apply()
+    }
+
+    fun fetchUserId(): Int = prefs.getInt("user_id", 0)
+
+    fun saveProfessionalEmail(email: String) {
+        prefs.edit().putString("prof_email", email).apply()
+    }
+
+    fun fetchProfessionalEmail(): String = prefs.getString("prof_email", "Desconhecido") ?: "Desconhecido"
+
     fun clearSession() {
         prefs.edit().clear().apply()
     }
+
+    fun saveHealthUnitCnpj(cnpj: String) {
+        prefs.edit().putString("health_unit_cnpj", cnpj).apply()
+    }
+
+    fun fetchHealthUnitCnpj(): String = prefs.getString("health_unit_cnpj", "") ?: ""
 }

@@ -10,4 +10,13 @@ data class Usuario(
     val cpf: String,
     val genre: String,
     val birthDate: String,
+    val healthUnit: HealthUnit? = null
+): Serializable
+
+data class HealthUnit(
+    val id: Long,
+    val name: String?,
+    val cnpj: String,
+    val phone: String?,
+    val email: String?
 ): Serializable

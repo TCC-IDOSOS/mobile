@@ -7,7 +7,6 @@ import android.hardware.SensorEventListener
 import android.hardware.SensorManager
 import android.os.Bundle
 import android.os.CountDownTimer
-import android.util.Log
 import android.view.View
 import android.widget.ImageButton
 import android.widget.LinearLayout
@@ -15,16 +14,17 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.example.fisioaging.R
-import com.example.fisioaging.model.Usuario // IMPORTANTE: Import do seu modelo
+import com.example.fisioaging.model.Usuario
+import com.example.fisioaging.util.SessionManager
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.FileOutputStream
+import java.net.URLEncoder
 import java.text.SimpleDateFormat
-import java.util.*
 import java.time.LocalDate
 import java.time.Period
 import java.time.format.DateTimeFormatter
-import java.net.URLEncoder
+import java.util.*
 
 private enum class EstadoTeste { PRONTO, RODANDO, CONCLUIDO }
 
@@ -50,16 +50,18 @@ class MarchaExecucaoActivity : AppCompatActivity(), SensorEventListener {
     private var timer: CountDownTimer? = null
     private val tempoTotalEmMillis: Long = 2 * 60 * 1000
 
-    // Sensor
+    // Sensores
     private lateinit var sensorManager: SensorManager
     private var acelerometro: Sensor? = null
+    private var giroscopio: Sensor? = null
 
     // Dados
     private val dadosColetados = mutableListOf<JSONObject>()
     private var tempoInicioTeste: Long = 0
-
     private var paciente: Usuario? = null
+    private lateinit var sessionManager: SessionManager
 
+    // Lógica de Marcha (Contagem)
     private var contagemRepeticoes = 0
     private var ultimoTempo = 0L
     private var fase = 0
@@ -69,11 +71,12 @@ class MarchaExecucaoActivity : AppCompatActivity(), SensorEventListener {
         setContentView(R.layout.activity_marcha_execucao)
 
         paciente = intent.getSerializableExtra("PACIENTE_SELECIONADO") as? Usuario
-
         supportActionBar?.title = "Marcha: ${paciente?.name ?: "Desconhecido"}"
 
+        sessionManager = SessionManager(this)
+
         inicializarUI()
-        configurarSensor()
+        configurarSensores()
         configurarBotoes()
 
         atualizarUI(EstadoTeste.PRONTO)
@@ -96,10 +99,15 @@ class MarchaExecucaoActivity : AppCompatActivity(), SensorEventListener {
         btnSave = findViewById(R.id.btn_save)
     }
 
-    private fun configurarSensor() {
+    private fun configurarSensores() {
         sensorManager = getSystemService(SENSOR_SERVICE) as SensorManager
+
+        // Configura Acelerômetro
         val sensorLinear = sensorManager.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION)
         acelerometro = sensorLinear ?: sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
+
+        // Configura Giroscópio
+        giroscopio = sensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE)
     }
 
     private fun configurarBotoes() {
@@ -139,7 +147,13 @@ class MarchaExecucaoActivity : AppCompatActivity(), SensorEventListener {
         fase = 0
         tempoInicioTeste = System.currentTimeMillis()
 
+        // Registra o Acelerômetro
         acelerometro?.let {
+            sensorManager.registerListener(this, it, SensorManager.SENSOR_DELAY_GAME)
+        }
+
+        // Registra o Giroscópio
+        giroscopio?.let {
             sensorManager.registerListener(this, it, SensorManager.SENSOR_DELAY_GAME)
         }
     }
@@ -151,15 +165,17 @@ class MarchaExecucaoActivity : AppCompatActivity(), SensorEventListener {
 
     override fun onSensorChanged(event: SensorEvent?) {
         event?.let { e ->
-            if (e.sensor.type == acelerometro?.type) {
-                val tempoAtual = System.currentTimeMillis()
-                val tempoRelativo = tempoAtual - tempoInicioTeste
+            val tempoAtual = System.currentTimeMillis()
+            val tempoRelativo = tempoAtual - tempoInicioTeste
+            val registro = JSONObject()
 
-                val registro = JSONObject()
-                registro.put("time", tempoRelativo)
-                registro.put("x", e.values[0])
-                registro.put("y", e.values[1])
-                registro.put("z", e.values[2])
+            registro.put("time", tempoRelativo)
+            registro.put("x", e.values[0])
+            registro.put("y", e.values[1])
+            registro.put("z", e.values[2])
+
+            if (e.sensor.type == acelerometro?.type) {
+                registro.put("sensor", "acelerometro")
                 dadosColetados.add(registro)
 
                 val y = e.values[1]
@@ -174,6 +190,10 @@ class MarchaExecucaoActivity : AppCompatActivity(), SensorEventListener {
                         }
                     }
                 }
+            } else if (e.sensor.type == giroscopio?.type) {
+                // Salva dados do giroscópio em rad/s
+                registro.put("sensor", "giroscopio")
+                dadosColetados.add(registro)
             }
         }
     }
@@ -182,12 +202,22 @@ class MarchaExecucaoActivity : AppCompatActivity(), SensorEventListener {
 
     private fun calcularIdade(dataNascString: String?): Int {
         if (dataNascString.isNullOrEmpty()) return 0
+
         return try {
-            val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
-            val dataNascimento = LocalDate.parse(dataNascString, formatter)
-            val hoje = LocalDate.now()
-            Period.between(dataNascimento, hoje).years
+            val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+            val dataNasc = sdf.parse(dataNascString) ?: return 0
+            val calNasc = Calendar.getInstance()
+            calNasc.time = dataNasc
+            val calHoje = Calendar.getInstance()
+            var idade = calHoje.get(Calendar.YEAR) - calNasc.get(Calendar.YEAR)
+
+            if (calHoje.get(Calendar.DAY_OF_YEAR) < calNasc.get(Calendar.DAY_OF_YEAR)) {
+                idade--
+            }
+
+            idade
         } catch (e: Exception) {
+            e.printStackTrace()
             0
         }
     }
@@ -200,32 +230,38 @@ class MarchaExecucaoActivity : AppCompatActivity(), SensorEventListener {
         val emailPac = paciente?.email?.replace(" ", "") ?: "Desconhecido"
         val emailCodificado = URLEncoder.encode(emailPac, "UTF-8")
         val generoPac = paciente?.genre ?: "Não informado"
-
         val idadePac = calcularIdade(paciente?.birthDate)
+
+        val idProfissional = sessionManager.fetchUserId()
+        val emailProfissional = sessionManager.fetchProfessionalEmail()
+        val cnpjUnidade = sessionManager.fetchHealthUnitCnpj()
 
         val dataStr = SimpleDateFormat("yyyyMMdd", Locale.getDefault()).format(Date())
         val horaStr = SimpleDateFormat("HHmmss", Locale.getDefault()).format(Date())
-
         val nomeArquivo = "MARCHA_${dataStr}_${horaStr}_${idPac}_${nomePac}_${emailCodificado}.json"
-        val json = JSONObject()
 
+        val json = JSONObject()
         json.put("tipo_teste", "MARCHA")
         json.put("data_hora", "${dataStr}_${horaStr}")
         json.put("sensor", "ANDROID")
         json.put("frequencia", 50)
         json.put("total_repeticoes_app", contagemRepeticoes)
+        json.put("id_profissional", idProfissional)
+        json.put("email_profissional", emailProfissional)
         json.put("sexo", generoPac)
         json.put("idade", idadePac)
         json.put("massa_kg", 70.0)
         json.put("registros", JSONArray(dadosColetados))
+        json.put("unidadeSaudeCnpj", cnpjUnidade)
 
         try {
             val fos: FileOutputStream = openFileOutput(nomeArquivo, Context.MODE_PRIVATE)
             fos.write(json.toString(4).toByteArray())
             fos.close()
-            Toast.makeText(this, "Teste salvo com sucesso!", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "Teste de Marcha salvo com sucesso!", Toast.LENGTH_SHORT).show()
         } catch (e: Exception) {
             e.printStackTrace()
+            Toast.makeText(this, "Erro ao salvar o teste de Marcha.", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -266,7 +302,6 @@ class MarchaExecucaoActivity : AppCompatActivity(), SensorEventListener {
 
     override fun onDestroy() {
         super.onDestroy()
-        timer?.cancel()
-        sensorManager.unregisterListener(this)
+        pararColeta()
     }
 }
