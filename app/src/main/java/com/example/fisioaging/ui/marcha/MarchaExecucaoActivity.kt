@@ -7,6 +7,8 @@ import android.hardware.SensorEventListener
 import android.hardware.SensorManager
 import android.os.Bundle
 import android.os.CountDownTimer
+import android.view.Menu
+import android.view.MenuItem
 import android.view.View
 import android.widget.ImageButton
 import android.widget.LinearLayout
@@ -48,7 +50,7 @@ class MarchaExecucaoActivity : AppCompatActivity(), SensorEventListener {
 
     // Timer
     private var timer: CountDownTimer? = null
-    private val tempoTotalEmMillis: Long = 2 * 60 * 1000
+    private var tempoTotalEmMillis: Long = 2 * 60 * 1000
 
     // Sensores
     private lateinit var sensorManager: SensorManager
@@ -80,6 +82,36 @@ class MarchaExecucaoActivity : AppCompatActivity(), SensorEventListener {
         configurarBotoes()
 
         atualizarUI(EstadoTeste.PRONTO)
+    }
+
+    override fun onCreateOptionsMenu(menu: Menu?): Boolean {
+        menuInflater.inflate(R.menu.menu_marcha_execucao, menu)
+
+        val itemModo = menu?.findItem(R.id.action_modo_apresentacao)
+        if (tempoTotalEmMillis == 30 * 1000L) {
+            itemModo?.title = "Modo Padrão (2 min)"
+        } else {
+            itemModo?.title = "Modo Apresentação (30s)"
+        }
+        return true
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        return when (item.itemId) {
+            R.id.action_modo_apresentacao -> {
+                if (tempoTotalEmMillis == 2 * 60 * 1000L) {
+                    tempoTotalEmMillis = 30 * 1000L
+                    item.title = "Modo Padrão (2 min)"
+                    textTimer.text = "0:30"
+                } else {
+                    tempoTotalEmMillis = 2 * 60 * 1000L
+                    item.title = "Modo Apresentação (30s)"
+                    textTimer.text = "2:00"
+                }
+                true
+            }
+            else -> super.onOptionsItemSelected(item)
+        }
     }
 
     private fun inicializarUI() {
@@ -287,7 +319,10 @@ class MarchaExecucaoActivity : AppCompatActivity(), SensorEventListener {
 
         when (estado) {
             EstadoTeste.PRONTO -> {
-                textTimer.text = "2:00"
+                val min = (tempoTotalEmMillis / 1000) / 60
+                val sec = (tempoTotalEmMillis / 1000) % 60
+                textTimer.text = String.format("%d:%02d", min, sec)
+
                 layoutBotaoPlay.visibility = View.VISIBLE
             }
             EstadoTeste.RODANDO -> {

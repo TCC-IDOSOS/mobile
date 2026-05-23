@@ -9,10 +9,10 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="26dp"
+        android:layout_marginTop="50dp"
 
-        android:orientation="vertical"
         android:background="@drawable/card_border_background"
+        android:orientation="vertical"
         android:padding="20dp">
 
         <TextView

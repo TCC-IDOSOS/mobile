@@ -71,11 +71,6 @@ class UttExecucaoActivity : AppCompatActivity(), SensorEventListener {
 
         sessionManager = SessionManager(this)
 
-        if (paciente == null) {
-            Toast.makeText(this, "ERRO: Paciente não recebeu dados!", Toast.LENGTH_LONG).show()
-        } else {
-            Toast.makeText(this, "Paciente: ${paciente?.name}", Toast.LENGTH_SHORT).show()
-        }
         inicializarUI()
         configurarSensor()
         configurarBotoes()
