@@ -27,8 +27,10 @@ import java.time.LocalDate
 import java.time.Period
 import java.time.format.DateTimeFormatter
 import java.util.*
+import android.media.AudioManager
+import android.media.ToneGenerator
 
-private enum class EstadoTeste { PRONTO, RODANDO, CONCLUIDO }
+private enum class EstadoTeste { PRONTO, PREPARANDO, RODANDO, CONCLUIDO }
 
 class MarchaExecucaoActivity : AppCompatActivity(), SensorEventListener {
 
@@ -52,6 +54,7 @@ class MarchaExecucaoActivity : AppCompatActivity(), SensorEventListener {
     private var timer: CountDownTimer? = null
     private var tempoTotalEmMillis: Long = 2 * 60 * 1000
 
+    private var timerPreparacao: CountDownTimer? = null
     // Sensores
     private lateinit var sensorManager: SensorManager
     private var acelerometro: Sensor? = null
@@ -68,6 +71,9 @@ class MarchaExecucaoActivity : AppCompatActivity(), SensorEventListener {
     private var ultimoTempo = 0L
     private var fase = 0
 
+    //para os sons
+    private var toneGenerator: ToneGenerator? = null
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_marcha_execucao)
@@ -81,6 +87,7 @@ class MarchaExecucaoActivity : AppCompatActivity(), SensorEventListener {
         configurarSensores()
         configurarBotoes()
 
+        toneGenerator = ToneGenerator(AudioManager.STREAM_MUSIC, 100)
         atualizarUI(EstadoTeste.PRONTO)
     }
 
@@ -134,19 +141,16 @@ class MarchaExecucaoActivity : AppCompatActivity(), SensorEventListener {
     private fun configurarSensores() {
         sensorManager = getSystemService(SENSOR_SERVICE) as SensorManager
 
-        // Configura Acelerômetro
         val sensorLinear = sensorManager.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION)
         acelerometro = sensorLinear ?: sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
-
-        // Configura Giroscópio
         giroscopio = sensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE)
     }
 
     private fun configurarBotoes() {
         btnPlay.setOnClickListener {
             iniciarColeta()
-            iniciarTimer(tempoTotalEmMillis)
-            atualizarUI(EstadoTeste.RODANDO)
+            atualizarUI(EstadoTeste.PREPARANDO)
+            iniciarTimerPreparacao()
         }
 
         btnRestartRodando.setOnClickListener {
@@ -179,15 +183,34 @@ class MarchaExecucaoActivity : AppCompatActivity(), SensorEventListener {
         fase = 0
         tempoInicioTeste = System.currentTimeMillis()
 
-        // Registra o Acelerômetro
         acelerometro?.let {
             sensorManager.registerListener(this, it, SensorManager.SENSOR_DELAY_GAME)
         }
 
-        // Registra o Giroscópio
         giroscopio?.let {
             sensorManager.registerListener(this, it, SensorManager.SENSOR_DELAY_GAME)
         }
+    }
+
+    private fun iniciarTimerPreparacao() {
+        timerPreparacao = object : CountDownTimer(3000, 1000) {
+            override fun onTick(millisUntilFinished: Long) {
+                val segundosRestantes = (millisUntilFinished / 1000) + 1
+                textTimer.text = segundosRestantes.toString()
+
+                toneGenerator?.startTone(ToneGenerator.TONE_PROP_BEEP, 150)
+            }
+
+            override fun onFinish() {
+                toneGenerator?.stopTone()
+
+                toneGenerator?.startTone(ToneGenerator.TONE_CDMA_ALERT_CALL_GUARD, 800)
+
+                iniciarColeta()
+                iniciarTimer(tempoTotalEmMillis)
+                atualizarUI(EstadoTeste.RODANDO)
+            }
+        }.start()
     }
 
     private fun pararColeta() {
@@ -223,7 +246,6 @@ class MarchaExecucaoActivity : AppCompatActivity(), SensorEventListener {
                     }
                 }
             } else if (e.sensor.type == giroscopio?.type) {
-                // Salva dados do giroscópio em rad/s
                 registro.put("sensor", "giroscopio")
                 dadosColetados.add(registro)
             }
@@ -306,6 +328,7 @@ class MarchaExecucaoActivity : AppCompatActivity(), SensorEventListener {
             }
 
             override fun onFinish() {
+                toneGenerator?.startTone(ToneGenerator.TONE_CDMA_ALERT_CALL_GUARD, 1000)
                 pararColeta()
                 atualizarUI(EstadoTeste.CONCLUIDO)
             }
@@ -332,11 +355,14 @@ class MarchaExecucaoActivity : AppCompatActivity(), SensorEventListener {
                 textResultado.text = "$contagemRepeticoes Repetições"
                 layoutBotoesConcluido.visibility = View.VISIBLE
             }
+
+            else -> {}
         }
     }
 
     override fun onDestroy() {
         super.onDestroy()
         pararColeta()
+        toneGenerator?.release()
     }
 }

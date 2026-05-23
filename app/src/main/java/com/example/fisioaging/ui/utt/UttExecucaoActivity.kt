@@ -25,7 +25,9 @@ import java.util.*
 import java.time.LocalDate
 import java.time.Period
 import java.time.format.DateTimeFormatter
-private enum class EstadoUTT { PRONTO, RODANDO, CONCLUIDO }
+import android.media.AudioManager
+import android.media.ToneGenerator
+private enum class EstadoUTT { PRONTO, PREPARANDO , RODANDO, CONCLUIDO }
 
 class UttExecucaoActivity : AppCompatActivity(), SensorEventListener {
 
@@ -48,6 +50,7 @@ class UttExecucaoActivity : AppCompatActivity(), SensorEventListener {
 
     private var timer: CountDownTimer? = null
     private val tempoTotalEmMillis: Long = 30 * 1000
+    private var timerPreparacao: CountDownTimer? = null
 
     private lateinit var sensorManager: SensorManager
     private var acelerometro: Sensor? = null
@@ -61,6 +64,7 @@ class UttExecucaoActivity : AppCompatActivity(), SensorEventListener {
     private var contagemRepeticoes = 0
     private var ultimoTempo = 0L
     private var fase = 0
+    private var toneGenerator: ToneGenerator? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -74,6 +78,8 @@ class UttExecucaoActivity : AppCompatActivity(), SensorEventListener {
         inicializarUI()
         configurarSensor()
         configurarBotoes()
+
+        toneGenerator = ToneGenerator(AudioManager.STREAM_MUSIC, 100)
 
         atualizarUI(EstadoUTT.PRONTO)
 
@@ -106,8 +112,8 @@ class UttExecucaoActivity : AppCompatActivity(), SensorEventListener {
     private fun configurarBotoes() {
         btnPlay.setOnClickListener {
             iniciarColeta()
-            iniciarTimer(tempoTotalEmMillis)
-            atualizarUI(EstadoUTT.RODANDO)
+            atualizarUI(EstadoUTT.PREPARANDO)
+            iniciarTimerPreparacao()
         }
 
         btnStop.setOnClickListener { pararTeste() }
@@ -189,6 +195,27 @@ class UttExecucaoActivity : AppCompatActivity(), SensorEventListener {
         }
     }
 
+    private fun iniciarTimerPreparacao() {
+        timerPreparacao = object : CountDownTimer(3000, 1000) {
+            override fun onTick(millisUntilFinished: Long) {
+                val segundosRestantes = (millisUntilFinished / 1000) + 1
+                textTimer.text = segundosRestantes.toString()
+
+                toneGenerator?.startTone(ToneGenerator.TONE_PROP_BEEP, 150)
+            }
+
+            override fun onFinish() {
+                toneGenerator?.stopTone()
+
+                toneGenerator?.startTone(ToneGenerator.TONE_CDMA_ALERT_CALL_GUARD, 800)
+
+                iniciarColeta()
+                iniciarTimer(tempoTotalEmMillis)
+                atualizarUI(EstadoUTT.RODANDO)
+            }
+        }.start()
+    }
+
     private fun salvarJSON() {
         if (dadosColetados.isEmpty()) return
 
@@ -238,7 +265,9 @@ class UttExecucaoActivity : AppCompatActivity(), SensorEventListener {
                 textTimer.text = String.format("0:%02d", ms / 1000)
             }
             override fun onFinish() {
+                toneGenerator?.startTone(ToneGenerator.TONE_CDMA_ALERT_CALL_GUARD, 1000)
                 pararTeste()
+                atualizarUI(EstadoUTT.CONCLUIDO)
             }
         }.start()
     }
@@ -258,8 +287,20 @@ class UttExecucaoActivity : AppCompatActivity(), SensorEventListener {
                 textResultado.text = "$contagemRepeticoes Repetições"
                 layoutBotoesConcluido.visibility = View.VISIBLE
             }
+
+            else -> {}
         }
+    }
+    private fun pararColeta() {
+        timer?.cancel()
+        sensorManager.unregisterListener(this)
     }
 
     override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {}
+    override fun onDestroy() {
+        super.onDestroy()
+        pararColeta()
+        toneGenerator?.release()
+    }
+
 }
