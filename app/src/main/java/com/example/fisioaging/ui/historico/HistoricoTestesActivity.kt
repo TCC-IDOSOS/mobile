@@ -5,6 +5,7 @@ import android.os.Bundle
 import android.view.View
 import android.widget.Button
 import android.widget.ProgressBar
+import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -23,7 +24,11 @@ class HistoricoTestesActivity : AppCompatActivity() {
 
     private lateinit var recyclerView: RecyclerView
     private lateinit var loadingBar: ProgressBar
+    private lateinit var txtNomePaciente: TextView
+    private lateinit var txtTotalTestes: TextView
+
     private lateinit var sessionManager: SessionManager
+
     private var paciente: Usuario? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -31,16 +36,21 @@ class HistoricoTestesActivity : AppCompatActivity() {
         setContentView(R.layout.activity_historico_testes)
 
         paciente = intent.getSerializableExtra("PACIENTE_SELECIONADO") as? Usuario
+
         sessionManager = SessionManager(this)
 
         supportActionBar?.title = "Histórico de Testes"
-        paciente?.let {
-            supportActionBar?.subtitle = it.name
-        }
+        supportActionBar?.subtitle = null
+
+        txtNomePaciente = findViewById(R.id.txt_nome_paciente)
+        txtTotalTestes = findViewById(R.id.txt_total_testes)
 
         recyclerView = findViewById(R.id.recycler_historico)
         loadingBar = findViewById(R.id.progress_loading)
+
         val btnNovoTeste = findViewById<Button>(R.id.btn_novo_teste)
+
+        txtNomePaciente.text = paciente?.name ?: "Paciente"
 
         recyclerView.layoutManager = LinearLayoutManager(this)
 
@@ -55,30 +65,54 @@ class HistoricoTestesActivity : AppCompatActivity() {
 
     private fun buscarHistorico() {
         val email = paciente?.email ?: return
+
         loadingBar.visibility = View.VISIBLE
 
         CoroutineScope(Dispatchers.IO).launch {
             try {
                 val token = sessionManager.fetchAuthToken()
                 val service = RetrofitClient.create(token)
+
                 val testes = service.getTestesPaciente(email)
 
                 withContext(Dispatchers.Main) {
                     loadingBar.visibility = View.GONE
+
+                    txtTotalTestes.text =
+                        "${testes.size} ${if (testes.size == 1) "teste realizado" else "testes realizados"}"
+
                     if (testes.isEmpty()) {
-                        Toast.makeText(this@HistoricoTestesActivity, "Nenhum teste encontrado.", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(
+                            this@HistoricoTestesActivity,
+                            "Nenhum teste encontrado.",
+                            Toast.LENGTH_SHORT
+                        ).show()
                     }
+
                     recyclerView.adapter = HistoricoAdapter(testes) { teste ->
-                        val intent = Intent(this@HistoricoTestesActivity, ResultadoTesteActivity::class.java)
+                        val intent = Intent(
+                            this@HistoricoTestesActivity,
+                            ResultadoTesteActivity::class.java
+                        )
+
                         intent.putExtra("TESTE_SELECIONADO", teste)
-                        intent.putExtra("PACIENTE_SELECIONADO", paciente) // Passando o paciente também
+                        intent.putExtra("PACIENTE_SELECIONADO", paciente)
+
                         startActivity(intent)
                     }
                 }
+
             } catch (e: Exception) {
+
                 withContext(Dispatchers.Main) {
                     loadingBar.visibility = View.GONE
-                    Toast.makeText(this@HistoricoTestesActivity, "Erro ao carregar histórico", Toast.LENGTH_LONG).show()
+
+                    Toast.makeText(
+                        this@HistoricoTestesActivity,
+                        "Erro ao carregar histórico",
+                        Toast.LENGTH_LONG
+                    ).show()
+
                     e.printStackTrace()
                 }
             }

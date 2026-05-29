@@ -6,6 +6,7 @@ import android.view.Menu
 import android.view.MenuItem
 import android.view.View
 import android.widget.ProgressBar
+import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.SearchView
@@ -26,6 +27,8 @@ class ListaPacientesActivity : AppCompatActivity() {
     private lateinit var recyclerView: RecyclerView
     private lateinit var adapter: PacienteAdapter
     private lateinit var loadingBar: ProgressBar
+    private lateinit var loadingText: TextView
+    private lateinit var emptyMessage: TextView
     private lateinit var searchView: SearchView
     private lateinit var sessionManager: SessionManager
 
@@ -33,34 +36,45 @@ class ListaPacientesActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_lista_pacientes)
 
-        supportActionBar?.title = "Selecionar Paciente"
+        supportActionBar?.title = "Pacientes"
 
         sessionManager = SessionManager(this)
+
         loadingBar = findViewById(R.id.progress_loading)
+        loadingText = findViewById(R.id.txt_loading)
+        emptyMessage = findViewById(R.id.txt_empty)
         recyclerView = findViewById(R.id.recycler_pacientes)
         searchView = findViewById(R.id.searchViewPacientes)
 
         recyclerView.layoutManager = LinearLayoutManager(this)
 
-        // Força a barra de pesquisa a já abrir expandida para facilitar o uso
-        searchView.onActionViewExpanded()
-        searchView.setOnSearchClickListener {
-            searchView.requestFocus()
-        }
+        configurarBusca()
 
-        // Ajustes visuais para melhorar o contraste do texto e ícone da SearchView
-        val searchEditText = searchView.findViewById<android.widget.EditText>(androidx.appcompat.R.id.search_src_text)
+        buscarPacientes()
+    }
+
+    private fun configurarBusca() {
+        searchView.queryHint = "Buscar por nome ou CPF"
+
+        searchView.onActionViewExpanded()
+
+        val searchEditText =
+            searchView.findViewById<android.widget.EditText>(
+                androidx.appcompat.R.id.search_src_text
+            )
+
         searchEditText.setTextColor(android.graphics.Color.BLACK)
         searchEditText.setHintTextColor(android.graphics.Color.GRAY)
 
-        val searchIcon = searchView.findViewById<android.widget.ImageView>(androidx.appcompat.R.id.search_mag_icon)
+        val searchIcon =
+            searchView.findViewById<android.widget.ImageView>(
+                androidx.appcompat.R.id.search_mag_icon
+            )
+
         searchIcon.setColorFilter(android.graphics.Color.BLACK)
 
-        // Filtra a lista em tempo real conforme o usuário digita
         searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
-            override fun onQueryTextSubmit(query: String?): Boolean {
-                return false
-            }
+            override fun onQueryTextSubmit(query: String?) = false
 
             override fun onQueryTextChange(newText: String?): Boolean {
                 if (::adapter.isInitialized) {
@@ -69,8 +83,6 @@ class ListaPacientesActivity : AppCompatActivity() {
                 return true
             }
         })
-
-        buscarPacientes()
     }
 
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
@@ -89,48 +101,85 @@ class ListaPacientesActivity : AppCompatActivity() {
     }
 
     private fun deslogar() {
-        // Limpa os dados locais e impede o retorno via botão de voltar
         sessionManager.clearSession()
+
         val intent = Intent(this, LoginActivity::class.java)
-        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        intent.flags =
+            Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+
         startActivity(intent)
         finish()
     }
 
     private fun buscarPacientes() {
-        loadingBar.visibility = View.VISIBLE
+        mostrarLoading(true)
 
         CoroutineScope(Dispatchers.IO).launch {
             try {
                 val token = sessionManager.fetchAuthToken()
                 val service = RetrofitClient.create(token)
 
-                // Busca todos os usuários e separa apenas os que têm o perfil de paciente
                 val todosUsuarios = service.getUsuarios()
-                val pacientes = todosUsuarios.filter { it.profile == "Paciente" }
+
+                val pacientes = todosUsuarios.filter {
+                    it.profile == "Paciente"
+                }
 
                 withContext(Dispatchers.Main) {
-                    loadingBar.visibility = View.GONE
+
+                    mostrarLoading(false)
 
                     if (pacientes.isEmpty()) {
-                        Toast.makeText(this@ListaPacientesActivity, "Nenhum paciente encontrado.", Toast.LENGTH_SHORT).show()
+                        emptyMessage.visibility = View.VISIBLE
+                        recyclerView.visibility = View.GONE
+                    } else {
+                        emptyMessage.visibility = View.GONE
+                        recyclerView.visibility = View.VISIBLE
                     }
 
-                    // Configura o adapter enviando o paciente selecionado para a tela de histórico
                     adapter = PacienteAdapter(pacientes) { paciente ->
-                        val intent = Intent(this@ListaPacientesActivity, HistoricoTestesActivity::class.java)
-                        intent.putExtra("PACIENTE_SELECIONADO", paciente)
+                        val intent = Intent(
+                            this@ListaPacientesActivity,
+                            HistoricoTestesActivity::class.java
+                        )
+
+                        intent.putExtra(
+                            "PACIENTE_SELECIONADO",
+                            paciente
+                        )
+
                         startActivity(intent)
                     }
+
                     recyclerView.adapter = adapter
                 }
+
             } catch (e: Exception) {
+
                 withContext(Dispatchers.Main) {
-                    loadingBar.visibility = View.GONE
-                    Toast.makeText(this@ListaPacientesActivity, "Erro ao conectar com o servidor AWS", Toast.LENGTH_LONG).show()
-                    e.printStackTrace()
+                    mostrarLoading(false)
+
+                    Toast.makeText(
+                        this@ListaPacientesActivity,
+                        "Erro ao conectar com o servidor AWS",
+                        Toast.LENGTH_LONG
+                    ).show()
+
+                    emptyMessage.visibility = View.VISIBLE
+                    emptyMessage.text =
+                        "Não foi possível carregar os pacientes"
+
+                    recyclerView.visibility = View.GONE
                 }
             }
         }
+    }
+
+    private fun mostrarLoading(loading: Boolean) {
+        loadingBar.visibility =
+            if (loading) View.VISIBLE else View.GONE
+
+        loadingText.visibility =
+            if (loading) View.VISIBLE else View.GONE
     }
 }
