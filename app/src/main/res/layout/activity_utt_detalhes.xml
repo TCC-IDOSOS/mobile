@@ -1,60 +1,114 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.core.widget.NestedScrollView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:padding="16dp"
-    android:background="#FFFFFF">
+    android:fillViewport="true"
+    android:background="#F5F5F5">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="50dp"
-
-        android:background="@drawable/card_border_background"
         android:orientation="vertical"
         android:padding="20dp">
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Teste UTT (Ponta dos pés)"
-            android:textColor="@android:color/black"
-            android:textSize="20sp"
-            android:textStyle="bold" />
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:text="O paciente deve realizar a elevação do calcanhar (ponta dos pés) o máximo de vezes possível. \n\nDuração: 30 segundos."
-            android:textColor="#555555"
-            android:textSize="16sp" />
-
-        <VideoView
-            android:id="@+id/videoView2"
+        <androidx.cardview.widget.CardView
             android:layout_width="match_parent"
-            android:layout_height="275dp" />
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="4dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="20dp">
+
+                <TextView
+                    android:id="@+id/text_nome_paciente"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textSize="15sp"
+                    android:textColor="#616161" />
+
+                <TextView
+                    android:id="@+id/text_titulo_teste"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="18dp"
+                    android:text="Ponta dos Pés (UTT)"
+                    android:textSize="26sp"
+                    android:textStyle="bold"
+                    android:textColor="#212121" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:text="Realize a elevação dos calcanhares o máximo de vezes possível."
+                    android:textSize="16sp"
+                    android:textColor="#616161" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="Duração: 30 segundos"
+                    android:textSize="15sp"
+                    android:textStyle="bold"
+                    android:textColor="#424242" />
+
+                <androidx.cardview.widget.CardView
+                    android:layout_width="match_parent"
+                    android:layout_height="320dp"
+                    android:layout_marginTop="20dp"
+                    app:cardCornerRadius="12dp"
+                    app:cardElevation="0dp">
+
+                    <VideoView
+                        android:id="@+id/videoView2"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent" />
+                </androidx.cardview.widget.CardView>
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="20dp"
+                    android:text="✓ Permanecer em pé&#10;✓ Elevar os calcanhares repetidamente&#10;✓ Manter ritmo contínuo durante o teste"
+                    android:textSize="16sp"
+                    android:textColor="#424242" />
+
+            </LinearLayout>
+
+        </androidx.cardview.widget.CardView>
+
+        <EditText
+            android:id="@+id/edt_peso_paciente"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:layout_marginTop="20dp"
+            android:background="@drawable/bg_search"
+            android:hint="Peso do paciente (kg)"
+            android:inputType="numberDecimal"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"
+            android:textColor="#212121"
+            android:textColorHint="#757575" />
+
+        <Button
+            android:id="@+id/btn_iniciar_utt"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:layout_marginTop="24dp"
+            android:layout_marginBottom="24dp"
+            android:text="Iniciar Teste"
+            android:textSize="18sp"
+            android:textColor="@android:color/white"
+            android:backgroundTint="@android:color/black" />
+
     </LinearLayout>
 
-    <EditText
-        android:id="@+id/edt_peso_paciente"
-        android:layout_width="match_parent"
-        android:layout_height="40dp"
-        android:layout_margin="16dp"
-        android:hint="Digite o peso do paciente (kg)"
-        android:inputType="numberDecimal"
-        android:textColor="#070000"
-        android:textColorHighlight="#070000"
-        android:textColorHint="#070000"
-        android:textColorLink="#070000" />
-    <Button
-        android:id="@+id/btn_iniciar_utt"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="32dp"
-        android:backgroundTint="@android:color/black"
-        android:text="Iniciar Teste"
-        android:textColor="@android:color/white"
-        android:paddingVertical="12dp" />
-</LinearLayout>
+</androidx.core.widget.NestedScrollView>

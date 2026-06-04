@@ -4,6 +4,7 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.widget.Button
+import android.widget.TextView
 import android.widget.VideoView
 import androidx.appcompat.app.AppCompatActivity
 import com.example.fisioaging.R
@@ -17,33 +18,55 @@ class MarchaDetalhesActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_marcha_detalhes)
 
-        paciente = intent.getSerializableExtra("PACIENTE_SELECIONADO") as? Usuario
+        paciente =
+            intent.getSerializableExtra("PACIENTE_SELECIONADO") as? Usuario
 
-        // Configura o player e o caminho do vídeo de instrução
-        val videoView = findViewById<VideoView>(R.id.videoView)
-        val videoUri = Uri.parse("android.resource://${packageName}/${R.raw.marcha}")
+        supportActionBar?.title = "Instruções do Teste"
+        supportActionBar?.subtitle = null
+
+        val txtNomePaciente =
+            findViewById<TextView>(R.id.text_nome_paciente)
+
+        val videoView =
+            findViewById<VideoView>(R.id.videoView)
+
+        val buttonIniciarTeste =
+            findViewById<Button>(R.id.button_iniciar_teste)
+
+        txtNomePaciente.text =
+            "Paciente: ${paciente?.name ?: "Paciente não identificado"}"
+
+        val videoUri =
+            Uri.parse(
+                "android.resource://${packageName}/${R.raw.marcha}"
+            )
+
         videoView.setVideoURI(videoUri)
 
-        // Mantém o vídeo em loop
-        videoView.setOnPreparedListener { mediaPlayer -> mediaPlayer.isLooping = false }
-        videoView.setOnCompletionListener {
-            videoView.postDelayed({ videoView.start() }, 1500)
+        videoView.setOnPreparedListener { mediaPlayer ->
+            mediaPlayer.isLooping = false
         }
+
+        videoView.setOnCompletionListener {
+            videoView.postDelayed({
+                videoView.start()
+            }, 1500)
+        }
+
         videoView.start()
 
-        supportActionBar?.title = "2 Minutos Marcha estacionária"
-
-        if (paciente != null) {
-            supportActionBar?.subtitle = "Paciente: ${paciente?.name}"
-        }
-
-        val buttonIniciarTeste: Button = findViewById(R.id.button_iniciar_teste)
-
         buttonIniciarTeste.setOnClickListener {
-            val intentExecucao = Intent(this, MarchaExecucaoActivity::class.java)
 
-            // manda os dados do paciente para a próxima tela
-            intentExecucao.putExtra("PACIENTE_SELECIONADO", paciente)
+            val intentExecucao =
+                Intent(
+                    this,
+                    MarchaExecucaoActivity::class.java
+                )
+
+            intentExecucao.putExtra(
+                "PACIENTE_SELECIONADO",
+                paciente
+            )
 
             startActivity(intentExecucao)
             finish()

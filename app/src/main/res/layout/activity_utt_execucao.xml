@@ -1,148 +1,157 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
+<androidx.core.widget.NestedScrollView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:padding="16dp"
-    android:background="#FFFFFF"
-    android:gravity="center_horizontal"
-    tools:context=".UttEmAndamentoActivity">
-
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="50dp"
-
-        android:background="@drawable/card_border_background"
-        android:orientation="vertical"
-        android:padding="20dp">
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Teste UTT (Ponta dos pés)"
-            android:textColor="@android:color/black"
-            android:textSize="20sp"
-            android:textStyle="bold" />
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:text="O paciente deve realizar a elevação plantar (ponta dos pés) o máximo de vezes possível durante o tempo determinado."
-            android:textColor="#555555"
-            android:textSize="16sp" />
-    </LinearLayout>
-
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:layout_marginTop="16dp"
-        android:background="@drawable/card_border_background"
-        android:paddingVertical="32dp"
-        android:gravity="center">
-
-        <TextView
-            android:id="@+id/text_timer_contador"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="0:30"
-            android:textColor="@android:color/black"
-            android:textSize="48sp"
-            android:textStyle="bold"/>
-
-        <TextView
-            android:id="@+id/text_resultado_final"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="0 Repetições"
-            android:textColor="#008000"
-            android:textSize="40sp"
-            android:textStyle="bold"
-            android:visibility="gone"/>
-
-        <TextView
-            android:id="@+id/lbl_status_teste"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Tempo Restante"
-            android:textColor="#333333"
-            android:textSize="18sp" />
-    </LinearLayout>
-
-    <FrameLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="32dp">
+    android:fillViewport="true"
+    android:background="#F5F5F5">
 
         <LinearLayout
-            android:id="@+id/layout_botao_play"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:gravity="center"
-            android:visibility="visible">
-            <ImageButton
-                android:id="@+id/btn_play"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:src="@drawable/ic_play"
-                android:background="@drawable/card_border_background"
-                android:padding="16dp"
-                android:contentDescription="Iniciar Teste" />
+            android:orientation="vertical"
+            android:padding="24dp">
+
+                <TextView
+                    android:id="@+id/text_nome_paciente"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Paciente:"
+                    android:textSize="15sp"
+                    android:textColor="#616161" />
+
+                <TextView
+                    android:id="@+id/text_titulo_teste"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:text="Ponta dos Pés (UTT)"
+                    android:textSize="28sp"
+                    android:textStyle="bold"
+                    android:textColor="#212121" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:text="Duração: 30 segundos"
+                    android:textSize="16sp"
+                    android:textColor="#616161" />
+
+                <androidx.cardview.widget.CardView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="24dp"
+                    app:cardCornerRadius="16dp"
+                    app:cardElevation="4dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:gravity="center"
+                        android:padding="36dp">
+
+                        <TextView
+                            android:id="@+id/lbl_status_teste"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Tempo Restante"
+                            android:textSize="18sp"
+                            android:textColor="#757575"/>
+
+                        <TextView
+                            android:id="@+id/text_timer_contador"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="8dp"
+                            android:text="0:30"
+                            android:textSize="58sp"
+                            android:textStyle="bold"
+                            android:textColor="#212121"/>
+
+                    </LinearLayout>
+
+                </androidx.cardview.widget.CardView>
+
+                <FrameLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="32dp">
+
+                    <LinearLayout
+                        android:id="@+id/layout_botao_play"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center">
+
+                        <ImageButton
+                            android:id="@+id/btn_play"
+                            android:layout_width="64dp"
+                            android:layout_height="64dp"
+                            android:src="@drawable/ic_play"
+                            android:background="@drawable/card_border_background"
+                            android:padding="18dp"
+                            android:contentDescription="Iniciar Teste"/>
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:id="@+id/layout_botoes_rodando"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center"
+                        android:visibility="gone">
+
+                        <ImageButton
+                            android:id="@+id/btn_restart_rodando"
+                            android:layout_width="56dp"
+                            android:layout_height="56dp"
+                            android:layout_marginEnd="16dp"
+                            android:src="@drawable/ic_restart"
+                            android:background="@drawable/card_border_background"/>
+
+                        <ImageButton
+                            android:id="@+id/btn_stop"
+                            android:layout_width="56dp"
+                            android:layout_height="56dp"
+                            android:src="@drawable/ic_stop"
+                            android:background="@drawable/card_border_background"/>
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:id="@+id/layout_botoes_concluido"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center"
+                        android:visibility="gone">
+
+                        <ImageButton
+                            android:id="@+id/btn_restart_concluido"
+                            android:layout_width="56dp"
+                            android:layout_height="56dp"
+                            android:src="@drawable/ic_restart"
+                            android:background="@drawable/card_border_background"/>
+
+                        <ImageButton
+                            android:id="@+id/btn_discard"
+                            android:layout_width="56dp"
+                            android:layout_height="56dp"
+                            android:layout_marginHorizontal="16dp"
+                            android:src="@drawable/ic_discard"
+                            android:background="@drawable/card_border_background"/>
+
+                        <ImageButton
+                            android:id="@+id/btn_save"
+                            android:layout_width="56dp"
+                            android:layout_height="56dp"
+                            android:src="@drawable/ic_save"
+                            android:background="@drawable/card_border_background"/>
+
+                    </LinearLayout>
+
+                </FrameLayout>
+
         </LinearLayout>
 
-        <LinearLayout
-            android:id="@+id/layout_botoes_rodando"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:gravity="center"
-            android:visibility="gone">
-            <ImageButton
-                android:id="@+id/btn_restart_rodando"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:src="@drawable/ic_restart"
-                android:background="@drawable/card_border_background"
-                android:padding="16dp"
-                android:layout_marginEnd="16dp"
-                android:contentDescription="Reiniciar" />
-
-        </LinearLayout>
-
-        <LinearLayout
-            android:id="@+id/layout_botoes_concluido"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:gravity="center"
-            android:visibility="gone">
-            <ImageButton
-                android:id="@+id/btn_restart_concluido"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:src="@drawable/ic_restart"
-                android:background="@drawable/card_border_background"
-                android:padding="16dp"
-                android:contentDescription="Reiniciar" />
-            <ImageButton
-                android:id="@+id/btn_discard"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:src="@drawable/ic_discard"
-                android:background="@drawable/card_border_background"
-                android:padding="16dp"
-                android:layout_marginHorizontal="16dp"
-                android:contentDescription="Descartar" />
-            <ImageButton
-                android:id="@+id/btn_save"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:src="@drawable/ic_save"
-                android:background="@drawable/card_border_background"
-                android:padding="16dp"
-                android:contentDescription="Salvar" />
-        </LinearLayout>
-    </FrameLayout>
-
-</LinearLayout>
+</androidx.core.widget.NestedScrollView>

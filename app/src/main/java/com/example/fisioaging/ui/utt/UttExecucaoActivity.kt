@@ -5,6 +5,8 @@ import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
+import android.media.AudioManager
+import android.media.ToneGenerator
 import android.os.Bundle
 import android.os.CountDownTimer
 import android.view.View
@@ -22,34 +24,35 @@ import org.json.JSONObject
 import java.io.FileOutputStream
 import java.net.URLEncoder
 import java.text.SimpleDateFormat
-import java.util.*
 import java.time.LocalDate
 import java.time.Period
 import java.time.format.DateTimeFormatter
-import android.media.AudioManager
-import android.media.ToneGenerator
+import java.util.*
 
-private enum class EstadoUTT { PRONTO, PREPARANDO, RODANDO, CONCLUIDO }
+private enum class EstadoUTT {
+    PRONTO,
+    PREPARANDO,
+    RODANDO,
+    CONCLUIDO
+}
 
 class UttExecucaoActivity : AppCompatActivity(), SensorEventListener {
 
-    // UI
     private lateinit var textTimer: TextView
-    private var pesoPaciente: Double = 0.0
-    private lateinit var textResultado: TextView
     private lateinit var lblStatus: TextView
+    private lateinit var txtNomePaciente: TextView
 
     private lateinit var layoutBotaoPlay: LinearLayout
     private lateinit var layoutBotoesRodando: LinearLayout
     private lateinit var layoutBotoesConcluido: LinearLayout
 
     private lateinit var btnPlay: ImageButton
+    private lateinit var btnStop: ImageButton
     private lateinit var btnRestartRodando: ImageButton
     private lateinit var btnRestartConcluido: ImageButton
     private lateinit var btnDiscard: ImageButton
     private lateinit var btnSave: ImageButton
 
-    // Timers
     private var timer: CountDownTimer? = null
     private val tempoTotalEmMillis: Long = TestConfig.DURACAO_UTT_MS
     private var timerPreparacao: CountDownTimer? = null
@@ -58,28 +61,32 @@ class UttExecucaoActivity : AppCompatActivity(), SensorEventListener {
     private lateinit var sensorManager: SensorManager
     private var acelerometro: Sensor? = null
 
-    // Dados e Estado
     private val dadosColetados = mutableListOf<JSONObject>()
+
     private var tempoInicioTeste: Long = 0
+    private var pesoPaciente: Double = 0.0
     private var paciente: Usuario? = null
+
     private lateinit var sessionManager: SessionManager
 
-    // Algoritmo de contagem
     private var contagemRepeticoes = 0
     private var ultimoTempo = 0L
     private var fase = 0
 
-    // Feedback sonoro
     private var toneGenerator: ToneGenerator? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_utt_execucao)
 
-        paciente = intent.getSerializableExtra("PACIENTE_SELECIONADO") as? Usuario
-        pesoPaciente = intent.getDoubleExtra("PESO_PACIENTE", 0.0)
+        paciente =
+            intent.getSerializableExtra("PACIENTE_SELECIONADO") as? Usuario
 
-        supportActionBar?.title = "UTT: ${paciente?.name ?: "Ponta dos Pés"}"
+        pesoPaciente =
+            intent.getDoubleExtra("PESO_PACIENTE", 0.0)
+
+        supportActionBar?.title = "Acompanhar Teste"
+        supportActionBar?.subtitle = null
 
         sessionManager = SessionManager(this)
 
@@ -87,40 +94,73 @@ class UttExecucaoActivity : AppCompatActivity(), SensorEventListener {
         configurarSensor()
         configurarBotoes()
 
-        toneGenerator = ToneGenerator(AudioManager.STREAM_MUSIC, 100)
+        txtNomePaciente.text =
+            "Paciente: ${paciente?.name ?: "Paciente não identificado"}"
+
+        toneGenerator =
+            ToneGenerator(AudioManager.STREAM_MUSIC, 100)
 
         atualizarUI(EstadoUTT.PRONTO)
     }
 
     private fun inicializarUI() {
-        textTimer = findViewById(R.id.text_timer_contador)
-        textResultado = findViewById(R.id.text_resultado_final)
-        lblStatus = findViewById(R.id.lbl_status_teste)
+        txtNomePaciente =
+            findViewById(R.id.text_nome_paciente)
 
-        layoutBotaoPlay = findViewById(R.id.layout_botao_play)
-        layoutBotoesRodando = findViewById(R.id.layout_botoes_rodando)
-        layoutBotoesConcluido = findViewById(R.id.layout_botoes_concluido)
+        textTimer =
+            findViewById(R.id.text_timer_contador)
 
-        btnPlay = findViewById(R.id.btn_play)
-        btnRestartRodando = findViewById(R.id.btn_restart_rodando)
-        btnRestartConcluido = findViewById(R.id.btn_restart_concluido)
-        btnDiscard = findViewById(R.id.btn_discard)
-        btnSave = findViewById(R.id.btn_save)
+        lblStatus =
+            findViewById(R.id.lbl_status_teste)
+
+        layoutBotaoPlay =
+            findViewById(R.id.layout_botao_play)
+
+        layoutBotoesRodando =
+            findViewById(R.id.layout_botoes_rodando)
+
+        layoutBotoesConcluido =
+            findViewById(R.id.layout_botoes_concluido)
+
+        btnPlay =
+            findViewById(R.id.btn_play)
+
+        btnStop =
+            findViewById(R.id.btn_stop)
+
+        btnRestartRodando =
+            findViewById(R.id.btn_restart_rodando)
+
+        btnRestartConcluido =
+            findViewById(R.id.btn_restart_concluido)
+
+        btnDiscard =
+            findViewById(R.id.btn_discard)
+
+        btnSave =
+            findViewById(R.id.btn_save)
     }
 
     private fun configurarSensor() {
-        sensorManager = getSystemService(SENSOR_SERVICE) as SensorManager
-        // Aceleração linear remove a influência da gravidade, isolando o movimento real do paciente
-        acelerometro = sensorManager.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION)
+        sensorManager =
+            getSystemService(SENSOR_SERVICE) as SensorManager
+
+        acelerometro =
+            sensorManager.getDefaultSensor(
+                Sensor.TYPE_LINEAR_ACCELERATION
+            )
     }
 
     private fun configurarBotoes() {
+
         btnPlay.setOnClickListener {
-            iniciarColeta()
             atualizarUI(EstadoUTT.PREPARANDO)
             iniciarTimerPreparacao()
         }
 
+        btnStop.setOnClickListener {
+            pararTeste()
+        }
 
         btnRestartRodando.setOnClickListener {
             pararTeste()
@@ -131,10 +171,25 @@ class UttExecucaoActivity : AppCompatActivity(), SensorEventListener {
             atualizarUI(EstadoUTT.PRONTO)
         }
 
-        btnDiscard.setOnClickListener { finish() }
+        btnDiscard.setOnClickListener {
+            Toast.makeText(
+                this,
+                "Teste descartado.",
+                Toast.LENGTH_SHORT
+            ).show()
+            finish()
+        }
 
         btnSave.setOnClickListener {
+
             salvarJSON()
+
+            Toast.makeText(
+                this,
+                "Teste salvo com sucesso.",
+                Toast.LENGTH_SHORT
+            ).show()
+
             finish()
         }
     }
@@ -143,10 +198,16 @@ class UttExecucaoActivity : AppCompatActivity(), SensorEventListener {
         dadosColetados.clear()
         contagemRepeticoes = 0
         fase = 0
-        tempoInicioTeste = System.currentTimeMillis()
+
+        tempoInicioTeste =
+            System.currentTimeMillis()
 
         acelerometro?.let {
-            sensorManager.registerListener(this, it, SensorManager.SENSOR_DELAY_GAME)
+            sensorManager.registerListener(
+                this,
+                it,
+                SensorManager.SENSOR_DELAY_GAME
+            )
         }
     }
 
@@ -158,24 +219,33 @@ class UttExecucaoActivity : AppCompatActivity(), SensorEventListener {
 
     override fun onSensorChanged(event: SensorEvent?) {
         event?.let { e ->
+
             if (e.sensor.type == Sensor.TYPE_LINEAR_ACCELERATION) {
-                val tempoAtual = System.currentTimeMillis()
-                val tempoRelativo = tempoAtual - tempoInicioTeste
+
+                val tempoAtual =
+                    System.currentTimeMillis()
+
+                val tempoRelativo =
+                    tempoAtual - tempoInicioTeste
 
                 val registro = JSONObject()
+
                 registro.put("time", tempoRelativo)
                 registro.put("x", e.values[0])
                 registro.put("y", e.values[1])
                 registro.put("z", e.values[2])
+
                 dadosColetados.add(registro)
 
-                // Lógica de detecção de picos no eixo Y (movimento vertical de ponta de pé)
                 val y = e.values[1]
+
                 when (fase) {
                     0 -> if (y > 1.2) fase = 1
                     1 -> if (y < 0) fase = 2
                     2 -> {
-                        if (y < -1.2 && (tempoAtual - ultimoTempo > 600)) {
+                        if (y < -1.2 &&
+                            tempoAtual - ultimoTempo > 600
+                        ) {
                             contagemRepeticoes++
                             ultimoTempo = tempoAtual
                             fase = 0
@@ -186,40 +256,135 @@ class UttExecucaoActivity : AppCompatActivity(), SensorEventListener {
         }
     }
 
+    private fun iniciarTimerPreparacao() {
+
+        timerPreparacao =
+            object : CountDownTimer(3000, 1000) {
+
+                override fun onTick(ms: Long) {
+                    val segundos =
+                        (ms / 1000) + 1
+
+                    textTimer.text =
+                        segundos.toString()
+
+                    lblStatus.text =
+                        "Preparar"
+
+                    toneGenerator?.startTone(
+                        ToneGenerator.TONE_PROP_BEEP,
+                        150
+                    )
+                }
+
+                override fun onFinish() {
+
+                    toneGenerator?.startTone(
+                        ToneGenerator.TONE_CDMA_ALERT_CALL_GUARD,
+                        800
+                    )
+
+                    iniciarColeta()
+                    iniciarTimer(tempoTotalEmMillis)
+
+                    atualizarUI(EstadoUTT.RODANDO)
+                }
+            }
+
+        timerPreparacao?.start()
+    }
+
+    private fun iniciarTimer(duracao: Long) {
+
+        timer =
+            object : CountDownTimer(duracao, 1000) {
+
+                override fun onTick(ms: Long) {
+
+                    textTimer.text =
+                        String.format(
+                            Locale.getDefault(),
+                            "0:%02d",
+                            ms / 1000
+                        )
+
+                    lblStatus.text =
+                        "Tempo Restante"
+                }
+
+                override fun onFinish() {
+
+                    toneGenerator?.startTone(
+                        ToneGenerator.TONE_CDMA_ALERT_CALL_GUARD,
+                        1000
+                    )
+
+                    pararTeste()
+                }
+            }
+
+        timer?.start()
+    }
+
+    private fun atualizarUI(estado: EstadoUTT) {
+
+        layoutBotaoPlay.visibility = View.GONE
+        layoutBotoesRodando.visibility = View.GONE
+        layoutBotoesConcluido.visibility = View.GONE
+
+        when (estado) {
+
+            EstadoUTT.PRONTO -> {
+                textTimer.text = "0:30"
+                lblStatus.text = "Tempo Restante"
+                layoutBotaoPlay.visibility = View.VISIBLE
+            }
+
+            EstadoUTT.PREPARANDO -> {
+                layoutBotoesRodando.visibility = View.VISIBLE
+            }
+
+            EstadoUTT.RODANDO -> {
+                layoutBotoesRodando.visibility = View.VISIBLE
+            }
+
+            EstadoUTT.CONCLUIDO -> {
+                lblStatus.text = "Teste interrompido"
+                layoutBotoesConcluido.visibility = View.VISIBLE
+            }
+        }
+    }
+
     private fun calcularIdade(dataNascString: String?): Int {
-        if (dataNascString.isNullOrEmpty()) return 0
+
+        if (dataNascString.isNullOrEmpty())
+            return 0
+
         return try {
-            val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
-            val dataNascimento = LocalDate.parse(dataNascString, formatter)
+
+            val formatter =
+                DateTimeFormatter.ofPattern("yyyy-MM-dd")
+
+            val dataNascimento =
+                LocalDate.parse(
+                    dataNascString,
+                    formatter
+                )
+
             val hoje = LocalDate.now()
-            Period.between(dataNascimento, hoje).years
+
+            Period.between(
+                dataNascimento,
+                hoje
+            ).years
+
         } catch (e: Exception) {
             0
         }
     }
 
-    private fun iniciarTimerPreparacao() {
-        // Timer regressivo de 3 segundos com feedback sonoro para preparação
-        timerPreparacao = object : CountDownTimer(3000, 1000) {
-            override fun onTick(millisUntilFinished: Long) {
-                val segundosRestantes = (millisUntilFinished / 1000) + 1
-                textTimer.text = segundosRestantes.toString()
-
-                toneGenerator?.startTone(ToneGenerator.TONE_PROP_BEEP, 150)
-            }
-
-            override fun onFinish() {
-                toneGenerator?.stopTone()
-                toneGenerator?.startTone(ToneGenerator.TONE_CDMA_ALERT_CALL_GUARD, 800)
-
-                iniciarColeta()
-                iniciarTimer(tempoTotalEmMillis)
-                atualizarUI(EstadoUTT.RODANDO)
-            }
-        }.start()
-    }
-
     private fun salvarJSON() {
+
         if (dadosColetados.isEmpty()) return
 
         val idPac = paciente?.id ?: 0
@@ -239,11 +404,12 @@ class UttExecucaoActivity : AppCompatActivity(), SensorEventListener {
 
         // Monta o payload final conforme contrato do Swagger
         val json = JSONObject()
+
         json.put("tipo_teste", "UTT")
         json.put("data_hora", "${dataStr}_${horaStr}")
         json.put("sensor", "ANDROID")
         json.put("frequencia", 50)
-//        json.put("total_repeticoes_app", contagemRepeticoes)
+        json.put("total_repeticoes_app", contagemRepeticoes)
         json.put("id_profissional", idProfissional)
         json.put("email_profissional", emailProfissional)
         json.put("sexo", generoPac)
@@ -256,61 +422,39 @@ class UttExecucaoActivity : AppCompatActivity(), SensorEventListener {
             val fos: FileOutputStream = openFileOutput(nomeArquivo, Context.MODE_PRIVATE)
             fos.write(json.toString(4).toByteArray())
             fos.close()
-            Toast.makeText(this, "Teste UTT salvo com sucesso!", Toast.LENGTH_SHORT).show()
+
+            Toast.makeText(
+                this,
+                "Teste UTT salvo com sucesso!",
+                Toast.LENGTH_SHORT
+            ).show()
+
         } catch (e: Exception) {
+
             e.printStackTrace()
-            Toast.makeText(this, "Erro ao salvar o teste UTT.", Toast.LENGTH_SHORT).show()
+
+            Toast.makeText(
+                this,
+                "Erro ao salvar teste.",
+                Toast.LENGTH_SHORT
+            ).show()
         }
     }
 
-    private fun iniciarTimer(duracao: Long) {
-        timer = object : CountDownTimer(duracao, 1000) {
-            override fun onTick(ms: Long) {
-                textTimer.text = String.format("0:%02d", ms / 1000)
-            }
-            override fun onFinish() {
-                toneGenerator?.startTone(ToneGenerator.TONE_CDMA_ALERT_CALL_GUARD, 1000)
-                pararTeste()
-                atualizarUI(EstadoUTT.CONCLUIDO)
-            }
-        }.start()
+    override fun onAccuracyChanged(
+        sensor: Sensor?,
+        accuracy: Int
+    ) {
     }
-
-    private fun atualizarUI(estado: EstadoUTT) {
-        // Gerencia a visibilidade dos blocos da interface
-        layoutBotaoPlay.visibility = View.GONE
-        layoutBotoesRodando.visibility = View.GONE
-        layoutBotoesConcluido.visibility = View.GONE
-
-        when (estado) {
-            EstadoUTT.PRONTO -> {
-                val sec = (tempoTotalEmMillis / 1000)
-                textTimer.text = String.format("0:%02d", sec)
-                layoutBotaoPlay.visibility = View.VISIBLE
-            }
-            EstadoUTT.PREPARANDO -> {
-                layoutBotoesRodando.visibility = View.VISIBLE
-            }
-            EstadoUTT.RODANDO -> {
-                layoutBotoesRodando.visibility = View.VISIBLE
-            }
-            EstadoUTT.CONCLUIDO -> {
-                textResultado.text = "$contagemRepeticoes Repetições"
-                layoutBotoesConcluido.visibility = View.VISIBLE
-            }
-        }
-    }
-
-    private fun pararColeta() {
-        timer?.cancel()
-        sensorManager.unregisterListener(this)
-    }
-
-    override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {}
 
     override fun onDestroy() {
         super.onDestroy()
-        pararColeta()
+
+        timer?.cancel()
+        timerPreparacao?.cancel()
+
+        sensorManager.unregisterListener(this)
+
         toneGenerator?.release()
     }
 }
