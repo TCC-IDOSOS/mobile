@@ -41,6 +41,7 @@ class MarchaExecucaoActivity : AppCompatActivity(), SensorEventListener {
     private lateinit var textTimer: TextView
     private lateinit var lblStatus: TextView
     private lateinit var txtNomePaciente: TextView
+    private lateinit var txtDuracaoTeste: TextView
 
     private lateinit var layoutBotaoPlay: LinearLayout
     private lateinit var layoutBotoesRodando: LinearLayout
@@ -91,6 +92,7 @@ class MarchaExecucaoActivity : AppCompatActivity(), SensorEventListener {
         configurarBotoes()
 
         txtNomePaciente.text = "Paciente: ${paciente?.name ?: "Paciente não identificado"}"
+        txtDuracaoTeste.text = formatDurationLabel(tempoTotalEmMillis)
 
         toneGenerator = ToneGenerator(AudioManager.STREAM_MUSIC, 100)
 
@@ -99,6 +101,7 @@ class MarchaExecucaoActivity : AppCompatActivity(), SensorEventListener {
 
     private fun inicializarUI() {
         txtNomePaciente = findViewById(R.id.text_nome_paciente)
+        txtDuracaoTeste = findViewById(R.id.text_duracao_teste)
         textTimer = findViewById(R.id.text_timer_contador)
         lblStatus = findViewById(R.id.lbl_status_teste)
 
@@ -264,13 +267,35 @@ class MarchaExecucaoActivity : AppCompatActivity(), SensorEventListener {
 
     override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {}
 
+    private fun formatDurationLabel(durationMs: Long): String {
+        val seconds = durationMs / 1000
+        val minutes = seconds / 60
+        val remainderSeconds = seconds % 60
+
+        return if (minutes > 0) {
+            if (remainderSeconds > 0) {
+                "Duração: ${minutes} minuto${if (minutes > 1) "s" else ""} e ${remainderSeconds} segundos"
+            } else {
+                "Duração: ${minutes} minuto${if (minutes > 1) "s" else ""}"
+            }
+        } else {
+            "Duração: ${remainderSeconds} segundos"
+        }
+    }
+
     private fun calcularIdade(dataNascString: String?): Int {
         if (dataNascString.isNullOrEmpty()) return 0
         return try {
-            val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
-            val dataNascimento = LocalDate.parse(dataNascString, formatter)
-            val hoje = LocalDate.now()
-            Period.between(dataNascimento, hoje).years
+            val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+            val dataNasc = sdf.parse(dataNascString) ?: return 0
+            val calNasc = Calendar.getInstance()
+            calNasc.time = dataNasc
+            val calHoje = Calendar.getInstance()
+            var idade = calHoje.get(Calendar.YEAR) - calNasc.get(Calendar.YEAR)
+            if (calHoje.get(Calendar.DAY_OF_YEAR) < calNasc.get(Calendar.DAY_OF_YEAR)) {
+                idade--
+            }
+            idade
         } catch (e: Exception) {
             0
         }
