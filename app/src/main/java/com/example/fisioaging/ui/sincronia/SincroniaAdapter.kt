@@ -25,19 +25,23 @@ class SincroniaAdapter(private val testes: MutableList<TesteSalvo>) :
         return TesteViewHolder(view)
     }
 
-    override fun onBindViewHolder(holder: TesteViewHolder, position: Int) {
+    override fun onBindViewHolder(
+        holder: TesteViewHolder,
+        position: Int
+    ) {
         val teste = testes[position]
 
-        holder.nomeArquivo.text = teste.nomeExibicao
-        holder.nomePaciente.text = "Paciente: ${teste.nomePaciente}"
-        holder.tipoTeste.text = "Tipo: ${teste.tipoTeste}"
+        holder.tipoTeste.text = teste.tipoTeste
 
-        // Remove o listener temporariamente para evitar o bug onde a reciclagem da View
-        // altera os estados de itens que estão fora da tela
+        holder.nomePaciente.text =
+            teste.nomePaciente.replace("%20", " ")
+
+        holder.nomeArquivo.text =
+            teste.nomeExibicao
+
         holder.checkBox.setOnCheckedChangeListener(null)
         holder.checkBox.isChecked = teste.isSelecionado
 
-        // Grava a seleção do usuário de volta no objeto
         holder.checkBox.setOnCheckedChangeListener { _, isChecked ->
             teste.isSelecionado = isChecked
         }

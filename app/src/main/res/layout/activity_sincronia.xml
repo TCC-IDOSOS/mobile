@@ -1,40 +1,63 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:padding="16dp"
-    tools:context=".SincroniaActivity">
+    android:fillViewport="true">
 
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="30dp"
-        android:text="Testes Salvos"
-        android:textSize="24sp"
-        android:textStyle="bold" />
-
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/recycler_view_testes"
-        android:layout_width="match_parent"
-        android:layout_height="371dp"
-
-        android:layout_weight="1" />
-
-    <Button
-        android:id="@+id/btn_sincronizar"
+    <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Sincronizar Selecionados"
-        android:layout_marginTop="16dp"/>
+        android:paddingTop="24dp">
 
-    <Button
-        android:id="@+id/btn_apagar"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Apagar Selecionados"
-        android:backgroundTint="#FF5722"
-        android:layout_marginTop="8dp"/>
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="24dp">
 
-</LinearLayout>
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Gerencie os testes aguardando sincronização"
+                android:textSize="22sp"
+                android:textStyle="bold"
+                android:textColor="#212121"/>
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="Selecione os testes que deseja enviar para o servidor ou remover do dispositivo."
+                android:textSize="15sp"
+                android:textColor="#757575"/>
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/recycler_view_testes"
+                android:layout_width="match_parent"
+                android:layout_height="450dp"
+                android:layout_marginTop="20dp"/>
+
+            <Button
+                android:id="@+id/btn_sincronizar"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:layout_marginTop="20dp"
+                android:text="Sincronizar"
+                android:textColor="@android:color/white"
+                android:backgroundTint="@android:color/black"/>
+
+            <Button
+                android:id="@+id/btn_apagar"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:layout_marginTop="12dp"
+                android:text="Excluir"
+                android:textColor="@android:color/white"
+                android:backgroundTint="#D32F2F"/>
+
+        </LinearLayout>
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+</androidx.core.widget.NestedScrollView>

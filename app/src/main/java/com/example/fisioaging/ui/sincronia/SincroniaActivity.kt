@@ -23,30 +23,17 @@ class SincroniaActivity : AppCompatActivity() {
 
     private lateinit var recyclerView: RecyclerView
     private lateinit var adapter: SincroniaAdapter
+
     private var listaTestesSalvos = mutableListOf<TesteSalvo>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_sincronia)
-        supportActionBar?.title = "Sincronizar Testes"
+
+        supportActionBar?.title = "Testes Pendentes"
 
         configurarRecyclerView()
         configurarBotoes()
-    }
-
-    private fun configurarRecyclerView() {
-        recyclerView = findViewById(R.id.recycler_view_testes)
-        adapter = SincroniaAdapter(listaTestesSalvos)
-        recyclerView.layoutManager = LinearLayoutManager(this)
-        recyclerView.adapter = adapter
-    }
-
-    private fun configurarBotoes() {
-        val btnSincronizar: Button = findViewById(R.id.btn_sincronizar)
-        val btnApagar: Button = findViewById(R.id.btn_apagar)
-
-        btnApagar.setOnClickListener { apagarArquivosSelecionados() }
-        btnSincronizar.setOnClickListener { sincronizarArquivosSelecionados() }
     }
 
     override fun onResume() {
@@ -54,31 +41,77 @@ class SincroniaActivity : AppCompatActivity() {
         carregarTestesSalvos()
     }
 
+    private fun configurarRecyclerView() {
+        recyclerView = findViewById(R.id.recycler_view_testes)
+
+        adapter = SincroniaAdapter(listaTestesSalvos)
+
+        recyclerView.layoutManager = LinearLayoutManager(this)
+        recyclerView.adapter = adapter
+    }
+
+    private fun configurarBotoes() {
+
+        val btnSincronizar: Button =
+            findViewById(R.id.btn_sincronizar)
+
+        val btnApagar: Button =
+            findViewById(R.id.btn_apagar)
+
+        btnApagar.setOnClickListener {
+            apagarArquivosSelecionados()
+        }
+
+        btnSincronizar.setOnClickListener {
+            sincronizarArquivosSelecionados()
+        }
+    }
+
     private fun carregarTestesSalvos() {
+
         listaTestesSalvos.clear()
+
         val diretorioArquivos = filesDir
 
-        // Filtra apenas os arquivos JSON gerados pelos testes do app
         val arquivos = diretorioArquivos.listFiles { _, nome ->
-            nome.endsWith(".json") && (nome.startsWith("MARCHA") || nome.startsWith("UTT"))
+            nome.endsWith(".json") &&
+                    (nome.startsWith("MARCHA") ||
+                            nome.startsWith("UTT"))
         }
 
         arquivos?.forEach { arquivo ->
+
             try {
-                // Extrai os metadados do paciente e do teste usando o nome do arquivo
-                val partes = arquivo.name.replace(".json", "").split("_")
+
+                val partes =
+                    arquivo.name
+                        .replace(".json", "")
+                        .split("_")
 
                 if (partes.size >= 5) {
+
                     val tipoBruto = partes[0]
                     val dataBruta = partes[1]
                     val horaBruta = partes[2]
-                    val idPacienteExtraido = partes[3].toLong()
-                    val nomePacienteExtraido = partes[4]
-                    val emailPacienteExtraido = partes.getOrNull(5) ?: "desconhecido"
 
-                    val tipoFormatado = if (tipoBruto == "MARCHA") "Marcha Estacionária" else "Ponta dos Pés (UTT)"
+                    val idPacienteExtraido =
+                        partes[3].toLong()
 
-                    val infoFormatada = "${dataBruta.substring(6,8)}/${dataBruta.substring(4,6)}/${dataBruta.substring(0,4)} às ${horaBruta.substring(0,2)}:${horaBruta.substring(2,4)}"
+                    val nomePacienteExtraido =
+                        partes[4]
+
+                    val emailPacienteExtraido =
+                        partes.getOrNull(5)
+                            ?: "desconhecido"
+
+                    val tipoFormatado =
+                        if (tipoBruto == "MARCHA")
+                            "Marcha Estacionária"
+                        else
+                            "Ponta dos Pés (UTT)"
+
+                    val infoFormatada =
+                        "${dataBruta.substring(6, 8)}/${dataBruta.substring(4, 6)}/${dataBruta.substring(0, 4)} às ${horaBruta.substring(0, 2)}:${horaBruta.substring(2, 4)}"
 
                     listaTestesSalvos.add(
                         TesteSalvo(
@@ -90,89 +123,173 @@ class SincroniaActivity : AppCompatActivity() {
                             tipoTeste = tipoFormatado
                         )
                     )
+
                 } else {
-                    // Fallback para arquivos antigos ou mal formatados
+
                     listaTestesSalvos.add(
-                        TesteSalvo(arquivo, "Arquivo Antigo", 0L, "Desconhecido", "desconhecido@teste.com","N/A")
+                        TesteSalvo(
+                            arquivo,
+                            "Arquivo Antigo",
+                            0L,
+                            "Desconhecido",
+                            "desconhecido@teste.com",
+                            "N/A"
+                        )
                     )
                 }
+
             } catch (e: Exception) {
                 e.printStackTrace()
             }
         }
 
-        // Ordena para exibir os testes mais recentes primeiro
-        listaTestesSalvos.sortByDescending { it.arquivo.lastModified() }
+        listaTestesSalvos.sortByDescending {
+            it.arquivo.lastModified()
+        }
+
         adapter.notifyDataSetChanged()
     }
 
     private fun apagarArquivosSelecionados() {
-        val selecionados = adapter.getItensSelecionados()
+
+        val selecionados =
+            adapter.getItensSelecionados()
+
         if (selecionados.isEmpty()) {
-            Toast.makeText(this, "Nenhum teste selecionado", Toast.LENGTH_SHORT).show()
+
+            Toast.makeText(
+                this,
+                "Nenhum teste selecionado",
+                Toast.LENGTH_SHORT
+            ).show()
+
             return
         }
 
-        selecionados.forEach { it.arquivo.delete() }
-        Toast.makeText(this, "${selecionados.size} testes apagados", Toast.LENGTH_SHORT).show()
+        selecionados.forEach {
+            it.arquivo.delete()
+        }
+
+        Toast.makeText(
+            this,
+            "${selecionados.size} teste(s) excluído(s)",
+            Toast.LENGTH_SHORT
+        ).show()
+
         carregarTestesSalvos()
     }
 
     private fun sincronizarArquivosSelecionados() {
-        val selecionados = adapter.getItensSelecionados()
+
+        val selecionados =
+            adapter.getItensSelecionados()
 
         if (selecionados.isEmpty()) {
-            Toast.makeText(this, "Selecione testes para sincronizar", Toast.LENGTH_SHORT).show()
+
+            Toast.makeText(
+                this,
+                "Selecione testes para sincronizar",
+                Toast.LENGTH_SHORT
+            ).show()
+
             return
         }
 
         CoroutineScope(Dispatchers.IO).launch {
+
             try {
-                val apiSemToken = RetrofitClient.create()
-                val loginResponse = apiSemToken.login(
-                    LoginRequest(
-                        email = "string",
-                        password = "string"
+
+                var sucesso = 0
+                var falha = 0
+
+                val apiSemToken =
+                    RetrofitClient.create()
+
+                val loginResponse =
+                    apiSemToken.login(
+                        LoginRequest(
+                            email = "string",
+                            password = "string"
+                        )
                     )
-                )
 
                 val token = loginResponse.token
-                val api = RetrofitClient.create(token)
+
+                val api =
+                    RetrofitClient.create(token)
+
                 val gson = Gson()
 
                 selecionados.forEach { testeSalvo ->
+
                     try {
-                        val json = testeSalvo.arquivo.readText()
-                        val request = gson.fromJson(json, TesteRequest::class.java)
-                        val emailDecodificado = URLDecoder.decode(testeSalvo.emailPaciente, "UTF-8")
 
-                        // Dispara o payload para a AWS
-                        val response = api.enviarTeste(
-                            email = emailDecodificado.trim(),
-                            body = request
-                        )
+                        val json =
+                            testeSalvo.arquivo.readText()
 
-                        // Apaga o arquivo local apenas se o servidor confirmar o recebimento
+                        val request =
+                            gson.fromJson(
+                                json,
+                                TesteRequest::class.java
+                            )
+
+                        val emailDecodificado =
+                            URLDecoder.decode(
+                                testeSalvo.emailPaciente,
+                                "UTF-8"
+                            )
+
+                        val response =
+                            api.enviarTeste(
+                                email = emailDecodificado.trim(),
+                                body = request
+                            )
+
                         if (response.isSuccessful) {
+
+                            sucesso++
+
                             testeSalvo.arquivo.delete()
+
                         } else {
-                            Log.e("SYNC", "Erro: ${response.code()}")
+
+                            falha++
+
+                            Log.e(
+                                "SYNC",
+                                "Erro: ${response.code()}"
+                            )
                         }
 
                     } catch (e: Exception) {
+
+                        falha++
                         e.printStackTrace()
                     }
                 }
 
                 withContext(Dispatchers.Main) {
-                    Toast.makeText(this@SincroniaActivity, "Sincronização concluída!", Toast.LENGTH_SHORT).show()
+
+                    Toast.makeText(
+                        this@SincroniaActivity,
+                        "$sucesso teste(s) sincronizado(s) • $falha falha(s)",
+                        Toast.LENGTH_LONG
+                    ).show()
+
                     carregarTestesSalvos()
                 }
 
             } catch (e: Exception) {
+
                 e.printStackTrace()
+
                 withContext(Dispatchers.Main) {
-                    Toast.makeText(this@SincroniaActivity, "Erro ao autenticar ou enviar dados", Toast.LENGTH_LONG).show()
+
+                    Toast.makeText(
+                        this@SincroniaActivity,
+                        "Erro ao autenticar ou enviar dados",
+                        Toast.LENGTH_LONG
+                    ).show()
                 }
             }
         }
