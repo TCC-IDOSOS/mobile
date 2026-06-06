@@ -21,26 +21,46 @@ import kotlinx.coroutines.withContext
 class LoginActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        val splashScreen = installSplashScreen()
 
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_login)
 
+        splashScreen.setOnExitAnimationListener { splashScreenView ->
+            val animation = AnimationUtils.loadAnimation(this, R.anim.splash_anim)
+            animation.setAnimationListener(object : android.view.animation.Animation.AnimationListener {
+                override fun onAnimationStart(animation: android.view.animation.Animation?) {}
+
+                override fun onAnimationEnd(animation: android.view.animation.Animation?) {
+                    splashScreenView.remove()
+                }
+
+                override fun onAnimationRepeat(animation: android.view.animation.Animation?) {}
+            })
+            splashScreenView.iconView.startAnimation(animation)
+        }
+
         val sessionManager = SessionManager(this)
 
-        // Pula a tela de login se já houver um token salvo
         if (sessionManager.fetchAuthToken() != null) {
             iniciarApp()
         }
 
         findViewById<Button>(R.id.btn_login).setOnClickListener {
-            val email = findViewById<EditText>(R.id.edt_email).text.toString()
+            val email = findViewById<EditText>(R.id.edt_email).text.toString().trim()
             val pass = findViewById<EditText>(R.id.edt_password).text.toString()
 
-            if (email.isNotEmpty() && pass.isNotEmpty()) {
-                efetuarLogin(email, pass, sessionManager)
-            } else {
-                Toast.makeText(this, "Preencha os campos corretamente", Toast.LENGTH_SHORT).show()
+            if (email.isEmpty()) {
+                Toast.makeText(this, "O E-mail é obrigatório", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
             }
+
+            if (pass.isEmpty()) {
+                Toast.makeText(this, "A senha é obrigatória", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+
+            efetuarLogin(email, pass, sessionManager)
         }
     }
 
@@ -49,29 +69,44 @@ class LoginActivity : AppCompatActivity() {
 
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                //Faz o login inicial para pegar o token e o ID do user
                 val loginResponse = authService.login(LoginRequest(email, pass))
                 val idLogado = loginResponse.userId.toInt()
                 val tokenRecebido = loginResponse.token
 
-                //Cria um cliente autenticado para pegar o CNPJ
                 val authenticatedService = RetrofitClient.create(tokenRecebido)
                 val usuarioCompleto = authenticatedService.getUsuarioById(idLogado)
 
-                withContext(Dispatchers.Main) {
-                    session.saveAuthToken(tokenRecebido)
-                    session.saveUserId(idLogado)
-                    session.saveProfessionalEmail(email)
+                val perfil = usuarioCompleto.profile?.uppercase() ?: ""
 
-                    val cnpj = usuarioCompleto.healthUnit?.cnpj ?: ""
-                    session.saveHealthUnitCnpj(cnpj)
+                if (perfil == "PROFISSIONAL" || perfil == "ADMIN") {
+                    withContext(Dispatchers.Main) {
+                        session.saveAuthToken(tokenRecebido)
+                        session.saveUserId(idLogado)
+                        session.saveProfessionalEmail(usuarioCompleto.email ?: email)
 
-                    iniciarApp()
+                        val cnpj = usuarioCompleto.healthUnit?.cnpj ?: ""
+                        session.saveHealthUnitCnpj(cnpj)
+
+                        iniciarApp()
+                    }
+                } else {
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(this@LoginActivity, "Acesso restrito para profissionais e administradores", Toast.LENGTH_LONG).show()
+                    }
                 }
+
             } catch (e: Exception) {
                 withContext(Dispatchers.Main) {
                     e.printStackTrace()
-                    Toast.makeText(this@LoginActivity, "Falha na autenticação ou busca de dados", Toast.LENGTH_LONG).show()
+
+                    val errorMessage = e.message ?: ""
+                    if (errorMessage.contains("404") || errorMessage.contains("not found", ignoreCase = true)) {
+                        Toast.makeText(this@LoginActivity, "O E-mail inválido", Toast.LENGTH_LONG).show()
+                    } else if (errorMessage.contains("401") || errorMessage.contains("unauthorized", ignoreCase = true)) {
+                        Toast.makeText(this@LoginActivity, "Senha inválida", Toast.LENGTH_LONG).show()
+                    } else {
+                        Toast.makeText(this@LoginActivity, "Falha na autenticação ou busca de dados", Toast.LENGTH_LONG).show()
+                    }
                 }
             }
         }
