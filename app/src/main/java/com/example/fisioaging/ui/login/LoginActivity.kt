@@ -2,12 +2,10 @@ package com.example.fisioaging.ui.login
 
 import android.content.Intent
 import android.os.Bundle
-import android.view.animation.AnimationUtils
 import android.widget.Button
 import android.widget.EditText
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import com.example.fisioaging.R
 import com.example.fisioaging.model.LoginRequest
 import com.example.fisioaging.network.RetrofitClient
@@ -21,24 +19,8 @@ import kotlinx.coroutines.withContext
 class LoginActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        val splashScreen = installSplashScreen()
-
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_login)
-
-        splashScreen.setOnExitAnimationListener { splashScreenView ->
-            val animation = AnimationUtils.loadAnimation(this, R.anim.splash_anim)
-            animation.setAnimationListener(object : android.view.animation.Animation.AnimationListener {
-                override fun onAnimationStart(animation: android.view.animation.Animation?) {}
-
-                override fun onAnimationEnd(animation: android.view.animation.Animation?) {
-                    splashScreenView.remove()
-                }
-
-                override fun onAnimationRepeat(animation: android.view.animation.Animation?) {}
-            })
-            splashScreenView.iconView.startAnimation(animation)
-        }
 
         val sessionManager = SessionManager(this)
 
@@ -65,7 +47,7 @@ class LoginActivity : AppCompatActivity() {
     }
 
     private fun efetuarLogin(email: String, pass: String, session: SessionManager) {
-        val authService = RetrofitClient.instance
+        val authService = RetrofitClient.create(null)
 
         CoroutineScope(Dispatchers.IO).launch {
             try {
