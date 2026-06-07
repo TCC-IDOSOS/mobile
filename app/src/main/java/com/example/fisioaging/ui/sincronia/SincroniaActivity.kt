@@ -206,6 +206,9 @@ class SincroniaActivity : AppCompatActivity() {
                 var sucesso = 0
                 var falha = 0
 
+                val apiSemToken =
+                    RetrofitClient.instance
+
                 val savedEmail = sessionManager.fetchProfessionalEmail()
                 val savedPassword = sessionManager.fetchUserPassword()
 
@@ -215,9 +218,6 @@ class SincroniaActivity : AppCompatActivity() {
                     }
                     return@launch
                 }
-
-                val apiSemToken =
-                    RetrofitClient.create()
 
                 val loginResponse =
                     apiSemToken.login(

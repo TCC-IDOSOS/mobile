@@ -19,26 +19,25 @@ import kotlinx.coroutines.withContext
 class LoginActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
-
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_login)
 
         val sessionManager = SessionManager(this)
 
-        // Pula a tela de login se já houver um token salvo
         if (sessionManager.fetchAuthToken() != null) {
             iniciarApp()
         }
 
         findViewById<Button>(R.id.btn_login).setOnClickListener {
-            val email = findViewById<EditText>(R.id.edt_email).text.toString()
+            val email = findViewById<EditText>(R.id.edt_email).text.toString().trim()
             val pass = findViewById<EditText>(R.id.edt_password).text.toString()
 
-            if (email.isNotEmpty() && pass.isNotEmpty()) {
-                efetuarLogin(email, pass, sessionManager)
-            } else {
-                Toast.makeText(this, "Preencha os campos corretamente", Toast.LENGTH_SHORT).show()
+            if (email.isEmpty() || pass.isEmpty()) {
+                Toast.makeText(this, "Preencha todos os campos", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
             }
+
+            efetuarLogin(email, pass, sessionManager)
         }
     }
 
@@ -47,30 +46,40 @@ class LoginActivity : AppCompatActivity() {
 
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                //Faz o login inicial para pegar o token e o ID do user
+                // 1. Faz o login para obter o token
                 val loginResponse = authService.login(LoginRequest(email, pass))
                 val idLogado = loginResponse.userId.toInt()
                 val tokenRecebido = loginResponse.token
 
-                //Cria um cliente autenticado para pegar o CNPJ
+                // 2. Busca os dados completos do usuário para verificar o perfil
                 val authenticatedService = RetrofitClient.create(tokenRecebido)
                 val usuarioCompleto = authenticatedService.getUsuarioById(idLogado)
 
-                withContext(Dispatchers.Main) {
-                    session.saveAuthToken(tokenRecebido)
-                    session.saveUserId(idLogado)
-                    session.saveProfessionalEmail(email)
-                    session.saveUserPassword(pass)
+                val perfil = usuarioCompleto.profile.uppercase()
 
-                    val cnpj = usuarioCompleto.healthUnit?.cnpj ?: ""
-                    session.saveHealthUnitCnpj(cnpj)
+                if (perfil == "PROFISSIONAL" || perfil == "ADMIN") {
+                    withContext(Dispatchers.Main) {
+                        // 3. Salva os dados da sessão
+                        session.saveAuthToken(tokenRecebido)
+                        session.saveUserId(idLogado)
+                        session.saveProfessionalEmail(usuarioCompleto.email)
+                        session.saveUserPassword(pass) // Salva a senha para sincronização offline posterior
 
-                    iniciarApp()
+                        val cnpj = usuarioCompleto.healthUnit?.cnpj ?: ""
+                        session.saveHealthUnitCnpj(cnpj)
+
+                        iniciarApp()
+                    }
+                } else {
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(this@LoginActivity, "Acesso restrito para profissionais e administradores", Toast.LENGTH_LONG).show()
+                    }
                 }
+
             } catch (e: Exception) {
                 withContext(Dispatchers.Main) {
                     e.printStackTrace()
-                    Toast.makeText(this@LoginActivity, "Falha na autenticação ou busca de dados", Toast.LENGTH_LONG).show()
+                    Toast.makeText(this@LoginActivity, "Falha na autenticação: Verifique seus dados", Toast.LENGTH_LONG).show()
                 }
             }
         }
