@@ -190,12 +190,6 @@ class UttExecucaoActivity : AppCompatActivity(), SensorEventListener {
 
             salvarJSON()
 
-            Toast.makeText(
-                this,
-                "Teste salvo com sucesso.",
-                Toast.LENGTH_SHORT
-            ).show()
-
             finish()
         }
     }
@@ -355,7 +349,7 @@ class UttExecucaoActivity : AppCompatActivity(), SensorEventListener {
             }
 
             EstadoUTT.CONCLUIDO -> {
-                lblStatus.text = "Teste interrompido"
+                lblStatus.text = "Teste concluído"
                 layoutBotoesConcluido.visibility = View.VISIBLE
             }
         }
@@ -385,28 +379,18 @@ class UttExecucaoActivity : AppCompatActivity(), SensorEventListener {
     }
 
     private fun calcularIdade(dataNascString: String?): Int {
-
-        if (dataNascString.isNullOrEmpty())
-            return 0
-
+        if (dataNascString.isNullOrEmpty()) return 0
         return try {
-
-            val formatter =
-                DateTimeFormatter.ofPattern("yyyy-MM-dd")
-
-            val dataNascimento =
-                LocalDate.parse(
-                    dataNascString,
-                    formatter
-                )
-
-            val hoje = LocalDate.now()
-
-            Period.between(
-                dataNascimento,
-                hoje
-            ).years
-
+            val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+            val dataNasc = sdf.parse(dataNascString) ?: return 0
+            val calNasc = Calendar.getInstance()
+            calNasc.time = dataNasc
+            val calHoje = Calendar.getInstance()
+            var idade = calHoje.get(Calendar.YEAR) - calNasc.get(Calendar.YEAR)
+            if (calHoje.get(Calendar.DAY_OF_YEAR) < calNasc.get(Calendar.DAY_OF_YEAR)) {
+                idade--
+            }
+            idade
         } catch (e: Exception) {
             0
         }
@@ -431,14 +415,15 @@ class UttExecucaoActivity : AppCompatActivity(), SensorEventListener {
         val horaStr = SimpleDateFormat("HHmmss", Locale.getDefault()).format(Date())
         val nomeArquivo = "UTT_${dataStr}_${horaStr}_${idPac}_${nomePac}_${emailCodificado}.json"
 
-        // Monta o payload final conforme contrato do Swagger
+        // Monta le payload final conforme contrato do Swagger
         val json = JSONObject()
 
         json.put("tipo_teste", "UTT")
         json.put("data_hora", "${dataStr}_${horaStr}")
         json.put("sensor", "ANDROID")
         json.put("frequencia", 50)
-        json.put("total_repeticoes_app", contagemRepeticoes)
+        // Removida a contagem local do app pois não deve ser considerada
+        json.put("total_repeticoes_app", 0)
         json.put("id_profissional", idProfissional)
         json.put("email_profissional", emailProfissional)
         json.put("sexo", generoPac)

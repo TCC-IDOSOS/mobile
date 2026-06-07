@@ -59,7 +59,11 @@ class HistoricoTestesActivity : AppCompatActivity() {
             intent.putExtra("PACIENTE_SELECIONADO", paciente)
             startActivity(intent)
         }
+    }
 
+    override fun onResume() {
+        super.onResume()
+        // Atualiza o histórico sempre que a tela ganha foco (ex: ao voltar de um novo teste)
         buscarHistorico()
     }
 

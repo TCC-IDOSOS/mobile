@@ -2,12 +2,10 @@ package com.example.fisioaging.ui.login
 
 import android.content.Intent
 import android.os.Bundle
-import android.view.animation.AnimationUtils
 import android.widget.Button
 import android.widget.EditText
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import com.example.fisioaging.R
 import com.example.fisioaging.model.LoginRequest
 import com.example.fisioaging.network.RetrofitClient
@@ -62,6 +60,7 @@ class LoginActivity : AppCompatActivity() {
                     session.saveAuthToken(tokenRecebido)
                     session.saveUserId(idLogado)
                     session.saveProfessionalEmail(email)
+                    session.saveUserPassword(pass)
 
                     val cnpj = usuarioCompleto.healthUnit?.cnpj ?: ""
                     session.saveHealthUnitCnpj(cnpj)

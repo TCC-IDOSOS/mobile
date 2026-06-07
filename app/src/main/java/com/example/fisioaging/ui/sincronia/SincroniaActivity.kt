@@ -12,6 +12,7 @@ import com.example.fisioaging.model.LoginRequest
 import com.example.fisioaging.model.TesteRequest
 import com.example.fisioaging.model.TesteSalvo
 import com.example.fisioaging.network.RetrofitClient
+import com.example.fisioaging.util.SessionManager
 import com.google.gson.Gson
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -23,12 +24,15 @@ class SincroniaActivity : AppCompatActivity() {
 
     private lateinit var recyclerView: RecyclerView
     private lateinit var adapter: SincroniaAdapter
+    private lateinit var sessionManager: SessionManager
 
     private var listaTestesSalvos = mutableListOf<TesteSalvo>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_sincronia)
+
+        sessionManager = SessionManager(this)
 
         supportActionBar?.title = "Testes Pendentes"
 
@@ -202,14 +206,24 @@ class SincroniaActivity : AppCompatActivity() {
                 var sucesso = 0
                 var falha = 0
 
+                val savedEmail = sessionManager.fetchProfessionalEmail()
+                val savedPassword = sessionManager.fetchUserPassword()
+
+                if (savedEmail.isEmpty() || savedPassword.isEmpty()) {
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(this@SincroniaActivity, "Credenciais não encontradas. Faça login novamente.", Toast.LENGTH_LONG).show()
+                    }
+                    return@launch
+                }
+
                 val apiSemToken =
                     RetrofitClient.create()
 
                 val loginResponse =
                     apiSemToken.login(
                         LoginRequest(
-                            email = "string",
-                            password = "string"
+                            email = savedEmail,
+                            password = savedPassword
                         )
                     )
 

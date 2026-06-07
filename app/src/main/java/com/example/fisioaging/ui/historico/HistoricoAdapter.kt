@@ -19,7 +19,6 @@ class HistoricoAdapter(
     class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         val txtTipo: TextView = view.findViewById(R.id.txt_tipo_teste)
         val txtData: TextView = view.findViewById(R.id.txt_data_hora)
-        val txtRepeticoes: TextView = view.findViewById(R.id.txt_repeticoes)
         val txtStatus: TextView = view.findViewById(R.id.txt_status)
     }
 
@@ -35,7 +34,6 @@ class HistoricoAdapter(
         
         holder.txtTipo.text = if (teste.testType == "MARCHA") "Marcha Estacionária" else "Ponta dos Pés (UTT)"
         holder.txtData.text = formatarData(teste.testDateTime)
-        holder.txtRepeticoes.text = "Repetições: ${teste.totalRepetitionsApp}"
         
         holder.txtStatus.text = traduzirStatus(teste.status)
         val colorRes = when (teste.status.uppercase()) {

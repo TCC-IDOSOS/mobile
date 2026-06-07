@@ -46,15 +46,5 @@
             android:text="Data e Hora"
             android:textSize="14sp" />
 
-        <TextView
-            android:id="@+id/txt_repeticoes"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:text="Repetições: 0"
-            android:textSize="16sp"
-            android:textStyle="bold"
-            android:textColor="@color/black" />
-
     </LinearLayout>
 </androidx.cardview.widget.CardView>

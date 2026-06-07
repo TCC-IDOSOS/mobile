@@ -24,9 +24,6 @@ import org.json.JSONObject
 import java.io.FileOutputStream
 import java.net.URLEncoder
 import java.text.SimpleDateFormat
-import java.time.LocalDate
-import java.time.Period
-import java.time.format.DateTimeFormatter
 import java.util.*
 
 private enum class EstadoTeste {
@@ -41,7 +38,6 @@ class MarchaExecucaoActivity : AppCompatActivity(), SensorEventListener {
     private lateinit var textTimer: TextView
     private lateinit var lblStatus: TextView
     private lateinit var txtNomePaciente: TextView
-    private lateinit var txtDuracaoTeste: TextView
 
     private lateinit var layoutBotaoPlay: LinearLayout
     private lateinit var layoutBotoesRodando: LinearLayout
@@ -92,7 +88,6 @@ class MarchaExecucaoActivity : AppCompatActivity(), SensorEventListener {
         configurarBotoes()
 
         txtNomePaciente.text = "Paciente: ${paciente?.name ?: "Paciente não identificado"}"
-        txtDuracaoTeste.text = formatDurationLabel(tempoTotalEmMillis)
 
         toneGenerator = ToneGenerator(AudioManager.STREAM_MUSIC, 100)
 
@@ -101,7 +96,6 @@ class MarchaExecucaoActivity : AppCompatActivity(), SensorEventListener {
 
     private fun inicializarUI() {
         txtNomePaciente = findViewById(R.id.text_nome_paciente)
-        txtDuracaoTeste = findViewById(R.id.text_duracao_teste)
         textTimer = findViewById(R.id.text_timer_contador)
         lblStatus = findViewById(R.id.lbl_status_teste)
 
@@ -267,22 +261,6 @@ class MarchaExecucaoActivity : AppCompatActivity(), SensorEventListener {
 
     override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {}
 
-    private fun formatDurationLabel(durationMs: Long): String {
-        val seconds = durationMs / 1000
-        val minutes = seconds / 60
-        val remainderSeconds = seconds % 60
-
-        return if (minutes > 0) {
-            if (remainderSeconds > 0) {
-                "Duração: ${minutes} minuto${if (minutes > 1) "s" else ""} e ${remainderSeconds} segundos"
-            } else {
-                "Duração: ${minutes} minuto${if (minutes > 1) "s" else ""}"
-            }
-        } else {
-            "Duração: ${remainderSeconds} segundos"
-        }
-    }
-
     private fun calcularIdade(dataNascString: String?): Int {
         if (dataNascString.isNullOrEmpty()) return 0
         return try {
@@ -324,7 +302,8 @@ class MarchaExecucaoActivity : AppCompatActivity(), SensorEventListener {
         json.put("data_hora", "${dataStr}_${horaStr}")
         json.put("sensor", "ANDROID")
         json.put("frequencia", 50)
-        json.put("total_repeticoes_app", contagemRepeticoes)
+        // Removida a contagem local do app pois não deve ser considerada
+        json.put("total_repeticoes_app", 0)
         json.put("id_profissional", idProfissional)
         json.put("email_profissional", emailProfissional)
         json.put("sexo", generoPac)

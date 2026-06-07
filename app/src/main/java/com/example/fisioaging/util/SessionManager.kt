@@ -22,7 +22,13 @@ class SessionManager(context: Context) {
         prefs.edit().putString("prof_email", email).apply()
     }
 
-    fun fetchProfessionalEmail(): String = prefs.getString("prof_email", "Desconhecido") ?: "Desconhecido"
+    fun fetchProfessionalEmail(): String = prefs.getString("prof_email", "") ?: ""
+
+    fun saveUserPassword(password: String) {
+        prefs.edit().putString("user_password", password).apply()
+    }
+
+    fun fetchUserPassword(): String = prefs.getString("user_password", "") ?: ""
 
     fun clearSession() {
         prefs.edit().clear().apply()

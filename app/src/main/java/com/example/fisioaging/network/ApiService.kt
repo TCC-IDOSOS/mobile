@@ -2,10 +2,10 @@ package com.example.fisioaging.network
 
 import com.example.fisioaging.model.LoginRequest
 import com.example.fisioaging.model.LoginResponse
-import com.example.fisioaging.model.RelatorioTesteResponse
 import com.example.fisioaging.model.TesteRequest
 import com.example.fisioaging.model.TesteResponse
 import com.example.fisioaging.model.Usuario
+import com.google.gson.JsonElement
 import retrofit2.Response
 import retrofit2.http.GET
 import retrofit2.http.POST
@@ -43,5 +43,5 @@ interface ApiService {
     suspend fun getRelatorioTeste(
         @Path("id") id: Long,
         @Query("email") email: String
-    ): RelatorioTesteResponse
+    ): JsonElement
 }
