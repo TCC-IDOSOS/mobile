@@ -114,6 +114,8 @@ class ResultadoTesteActivity : AppCompatActivity() {
                     val gson = Gson()
                     val jsonObject = jsonElement.asJsonObject
 
+                    println("JSON_REAL_DA_AWS: $jsonObject")
+
                     val status = jsonObject.get("status")?.asString
                     if (status == "processing") {
                         txtMsgProcessamento.visibility = View.VISIBLE
@@ -217,8 +219,15 @@ class ResultadoTesteActivity : AppCompatActivity() {
         }
 
         findViewById<TextView>(R.id.txt_res_classificacao).apply {
-            visibility = if (r.strategy != null) View.VISIBLE else View.GONE
-            text = "Estratégia: ${r.strategy}"
+            val estrategiaValida = r.strategy
+
+            if (!estrategiaValida.isNullOrBlank() && !estrategiaValida.contains("undefined", ignoreCase = true)) {
+                visibility = View.VISIBLE
+                text = "Estratégia: $estrategiaValida"
+            } else {
+                visibility = View.GONE
+
+            }
         }
     }
 
