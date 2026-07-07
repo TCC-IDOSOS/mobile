@@ -7,7 +7,7 @@ O **FisioAging** é uma aplicação mobile voltada à área da saúde, desenvolv
 ## 🛠️ Meu Escopo de Atuação & Tecnologias
 Sendo um projeto multidisciplinar de grande porte, a solução conta com uma API/Backend e um painel Web desenvolvidos por outros membros da equipe. 
 
-**Eu fui o principal responsável pelo ciclo de vida do aplicativo Android Nativo do início ao fim**, englobando:
+**Eu fui um dos principal responsável pelo ciclo de vida do aplicativo Android Nativo do início ao fim**, englobando:
 * **Desenvolvimento Nativo:** Criação da interface de usuário e regras de negócio utilizando **Kotlin** com padrões modernos do ecossistema Android Jetpack.
 * **Leitura de Sensores:** Implementação da lógica de captura, tratamento e persistência de dados de hardware através dos sensores de **acelerômetro e giroscópio** do dispositivo para mensurar testes físicos em idosos (como testes de marcha estacionária e UTT).
 * **Consumo de APIs:** Integração do aplicativo à API REST do ecossistema via Retrofit, tratando fluxos de autenticação (Tokens JWT/Interceptors) e sincronização offline-first para upload dos testes coletados.
